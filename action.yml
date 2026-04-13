@@ -38,20 +38,14 @@ runs:
       run: |
         npx playwright install --with-deps webkit chromium
     
-    - name: Install Firefox and geckodriver (Ubuntu)
+    - name: Install Firefox
       if: runner.os == 'Linux'
-      shell: bash
-      run: |
-        # Install Firefox
-        sudo apt-get update
-        sudo apt-get install -y firefox
-        
-        # Install geckodriver
-        wget -q https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckodriver-v0.34.0-linux64.tar.gz
-        tar -xzf geckodriver-v0.34.0-linux64.tar.gz
-        sudo mv geckodriver /usr/local/bin/
-        rm geckodriver-v0.34.0-linux64.tar.gz
-    
+      uses: browser-actions/setup-firefox@latest
+
+    - name: Install geckodriver
+      if: runner.os == 'Linux'
+      uses: browser-actions/setup-geckodriver@latest
+
     - name: Install Firefox (macOS)
       if: runner.os == 'macOS'
       shell: bash
