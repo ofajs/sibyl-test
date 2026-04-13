@@ -1,24 +1,33 @@
 # Sibyl Test
 
-一个轻量级、零依赖的浏览器测试框架，基于 Web Components 构建。
+[中文版](readme/cn.md) | [日本語](readme/jp.md)
 
-## 特性
+A lightweight, zero-dependency browser testing framework built with Web Components.
 
-- 🚀 **零依赖** - 核心组件无需安装任何依赖，直接在浏览器中使用
-- 🧩 **Web Components** - 基于 Web Components 构建，可在任何框架中使用
-- 📝 **简单易用** - 使用 HTML 标签编写测试，直观明了
-- ⚡ **并行测试** - 支持并行执行测试，提高测试效率
-- 🌐 **多浏览器支持** - 支持 WebKit、Chrome、Firefox 等多种浏览器
-- 🔧 **CLI 工具** - 提供命令行工具，方便集成到开发流程
-- 🤖 **CI/CD 支持** - 提供 GitHub Action，轻松集成到 CI/CD 流程
+## Features
 
-## 快速开始
+- 🚀 **Zero Dependencies** - Core components work directly in the browser with no installation required
+- 🧩 **Web Components** - Built on Web Components, usable in any framework
+- 📝 **Simple & Intuitive** - Write tests using HTML tags, straightforward and clear
+- ⚡ **Parallel Testing** - Supports parallel test execution for improved efficiency
+- 🌐 **Multi-Browser Support** - Supports WebKit, Chrome, Firefox and more
+- 🔓 **Non-Incognito Mode** - Uses normal browser mode, can test Service Worker, Origin Private File System and other advanced APIs
+- 🔧 **CLI Tools** - Command-line tools for easy integration into development workflows
+- 🤖 **CI/CD Support** - GitHub Action for seamless CI/CD integration
 
-### 直接在浏览器中使用
+## Difference from Playwright/Test
 
-Sibyl Test 可以直接通过 CDN 在 HTML 中使用，无需任何安装步骤。
+Playwright/Test runs browsers in incognito mode, which prevents access to certain browser APIs like Service Worker and Origin Private File System. Sibyl Test uses normal browser mode, allowing full access to these APIs.
 
-创建一个 HTML 文件，例如 `test.sb.html`：
+Additionally, Playwright/Test uses `spec.js` mode requiring you to learn specific testing syntax. Sibyl Test uses HTML for writing tests without any new syntax to learn — you don't even need to understand the CLI tools. Simply open the HTML file on a static server to run tests and view results.
+
+## Quick Start
+
+### Use Directly in Browser
+
+Sibyl Test can be used directly in HTML via CDN without any installation.
+
+Create an HTML file, for example `test.sb.html`:
 
 ```html
 <!doctype html>
@@ -64,30 +73,30 @@ Sibyl Test 可以直接通过 CDN 在 HTML 中使用，无需任何安装步骤�
 </html>
 ```
 
-### sb-test 组件
+### sb-test Component
 
-单个测试组件，用于编写独立的测试用例。
+A single test component for writing individual test cases.
 
-#### 属性
+#### Attributes
 
-- `name` - 测试名称（必填）
-- `parallel` - 是否并行执行（可选）
+- `name` - Test name (required)
+- `parallel` - Whether to execute in parallel (optional)
 
-#### 返回值
+#### Return Value
 
-测试脚本需要返回一个对象：
+Test scripts need to return an object:
 
 ```javascript
 {
-  assert: boolean,  // 测试是否通过
-  content: any      // 可选，测试结果内容
+  assert: boolean,  // Whether the test passes
+  content: any      // Optional, test result content
 }
 ```
 
-#### 示例
+#### Examples
 
 ```html
-<!-- 基本测试 -->
+<!-- Basic test -->
 <sb-test name="Basic test">
   <template>
     <script>
@@ -98,7 +107,7 @@ Sibyl Test 可以直接通过 CDN 在 HTML 中使用，无需任何安装步骤�
   </template>
 </sb-test>
 
-<!-- 并行测试 -->
+<!-- Parallel test -->
 <sb-test name="Parallel test" parallel>
   <template>
     <script>
@@ -110,7 +119,7 @@ Sibyl Test 可以直接通过 CDN 在 HTML 中使用，无需任何安装步骤�
   </template>
 </sb-test>
 
-<!-- 异步测试 -->
+<!-- Async test -->
 <sb-test name="Async test">
   <template>
     <script>
@@ -125,9 +134,9 @@ Sibyl Test 可以直接通过 CDN 在 HTML 中使用，无需任何安装步骤�
 </sb-test>
 ```
 
-### sb-test-suite 组件
+### sb-test-suite Component
 
-测试套件组件，用于组合多个测试文件。
+Test suite component for combining multiple test files.
 
 ```html
 <!doctype html>
@@ -147,9 +156,9 @@ Sibyl Test 可以直接通过 CDN 在 HTML 中使用，无需任何安装步骤�
 </html>
 ```
 
-### 常见问题
+### FAQ
 
-#### 如何在测试中使用 ES Modules？
+#### How to use ES Modules in tests?
 
 ```html
 <sb-test name="ES Module test">
@@ -166,7 +175,7 @@ Sibyl Test 可以直接通过 CDN 在 HTML 中使用，无需任何安装步骤�
 </sb-test>
 ```
 
-#### 如何测试异步操作？
+#### How to test async operations?
 
 ```html
 <sb-test name="Async operation test">
@@ -183,38 +192,38 @@ Sibyl Test 可以直接通过 CDN 在 HTML 中使用，无需任何安装步骤�
 </sb-test>
 ```
 
-## CLI 工具（多浏览器测试）
+## CLI Tools (Multi-Browser Testing)
 
-如果你需要在多个浏览器（WebKit、Chrome、Firefox）中运行测试，我们提供了 CLI 工具来自动化这一过程。
+If you need to run tests across multiple browsers (WebKit, Chrome, Firefox), we provide CLI tools to automate this process.
 
-### 安装
+### Installation
 
 ```bash
 npm install sibyl-test --save-dev
 ```
 
-### 基本用法
+### Basic Usage
 
 ```bash
-# 运行所有测试（默认使用 webkit、chrome、firefox）
+# Run all tests (default uses webkit, chrome, firefox)
 npx sb-test
 
-# 指定浏览器
+# Specify browsers
 npx sb-test --browsers webkit,chrome
 
-# 只生成测试文件
+# Generate test files only
 npx sb-test --generate-only
 
-# 只运行测试（不生成）
+# Run tests only (no generation)
 npx sb-test --run-only
 
-# 安装浏览器依赖
+# Install browser dependencies
 npx sb-test --install
 ```
 
-### 使用 npm scripts
+### Using npm scripts
 
-在 `package.json` 中添加：
+Add to `package.json`:
 
 ```json
 {
@@ -224,47 +233,47 @@ npx sb-test --install
 }
 ```
 
-然后运行：
+Then run:
 
 ```bash
 npm test
 ```
 
-### CLI 选项
+### CLI Options
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-b, --browsers <browsers>` | 指定测试浏览器（逗号分隔） | `webkit,chrome,firefox` |
-| `-p, --port <port>` | 测试服务器端口 | `30028` |
-| `--generate-only` | 只生成测试文件 | `false` |
-| `--run-only` | 只运行测试 | `false` |
-| `--install` | 安装浏览器依赖 | `false` |
-| `--keep-test-file` | 保留生成的测试文件 | `false` |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-b, --browsers <browsers>` | Browsers to test (comma-separated) | `webkit,chrome,firefox` |
+| `-p, --port <port>` | Test server port | `30028` |
+| `--generate-only` | Generate test files only | `false` |
+| `--run-only` | Run tests only | `false` |
+| `--install` | Install browser dependencies | `false` |
+| `--keep-test-file` | Keep generated test files | `false` |
 
-### 示例
+### Examples
 
 ```bash
-# 运行所有浏览器的测试
+# Run tests on all browsers
 sb-test
 
-# 只在 WebKit 中测试
+# Test only on WebKit
 sb-test --browsers webkit
 
-# 在 Chrome 和 Firefox 中测试
+# Test on Chrome and Firefox
 sb-test --browsers chrome,firefox
 
-# 安装浏览器依赖并运行测试
+# Install browser dependencies and run tests
 sb-test --install
 
-# 只生成测试文件
+# Generate test files only
 sb-test --generate-only
 ```
 
-## GitHub Actions 集成
+## GitHub Actions Integration
 
-### 使用预定义的 Action
+### Using the Predefined Action
 
-在你的项目中创建 `.github/workflows/test.yml`：
+Create `.github/workflows/test.yml` in your project:
 
 ```yaml
 name: Browser Tests
@@ -284,7 +293,7 @@ jobs:
           browsers: 'webkit,chrome,firefox'
 ```
 
-### 自定义配置
+### Custom Configuration
 
 ```yaml
 name: Browser Tests
@@ -318,7 +327,7 @@ jobs:
 
 ### generateTestHtml(rootDir)
 
-生成测试 HTML 文件。
+Generates the test HTML file.
 
 ```javascript
 import { generateTestHtml } from 'sibyl-test/scripts/generate-test-html.js';
@@ -330,7 +339,7 @@ console.log(`Generated: ${result.outputPath}`);
 
 ### runTests(options)
 
-运行浏览器测试。
+Runs browser tests.
 
 ```javascript
 import { runTests } from 'sibyl-test/scripts/run-tests.js';
@@ -348,49 +357,49 @@ if (result.success) {
 }
 ```
 
-## 工作原理
+## How It Works
 
-1. **生成阶段**：CLI 工具扫描项目中的所有 `.sb.html` 文件，生成一个包含所有测试的 `test-all.html` 文件。
+1. **Generation Phase**: The CLI tool scans all `.sb.html` files in the project and generates a `test-all.html` file containing all tests.
 
-2. **测试阶段**：
-   - 启动本地 HTTP 服务器
-   - 使用 Playwright（WebKit、Chrome）或 Selenium（Firefox）打开测试页面
-   - 等待所有测试完成
-   - 收集并显示测试结果
+2. **Test Phase**:
+   - Starts a local HTTP server
+   - Uses Playwright (WebKit, Chrome) or Selenium (Firefox) to open the test page
+   - Waits for all tests to complete
+   - Collects and displays test results
 
-3. **清理阶段**：删除生成的 `test-all.html` 文件（除非使用 `--no-cleanup` 选项）
+3. **Cleanup Phase**: Deletes the generated `test-all.html` file (unless using `--no-cleanup`)
 
-## 示例项目
+## Example Projects
 
-查看 `examples/` 目录了解更多使用示例：
+See the `examples/` directory for more usage examples:
 
-- [test-examples.sb.html](examples/test-examples.sb.html) - 基本测试示例
-- [test-parallel.sb.html](examples/test-parallel.sb.html) - 并行测试示例
-- [all.html](examples/all.html) - 测试套件示例
+- [test-examples.sb.html](examples/test-examples.sb.html) - Basic test examples
+- [test-parallel.sb.html](examples/test-parallel.sb.html) - Parallel test examples
+- [all.html](examples/all.html) - Test suite example
 
-## 浏览器支持
+## Browser Support
 
 - WebKit (Safari)
 - Chrome / Chromium
 - Firefox
 
-## 依赖说明
+## Dependencies
 
-### 核心组件（浏览器端）
+### Core Components (Browser-side)
 
-无依赖！核心组件基于原生 Web Components 构建，可直接在浏览器中使用。
+Zero dependencies! Core components are built on native Web Components and can be used directly in the browser.
 
-### CLI 工具（Node.js 端）
+### CLI Tools (Node.js-side)
 
-- `playwright` - 用于 WebKit 和 Chrome 测试
-- `selenium-webdriver` - 用于 Firefox 测试
-- `http-server` - 本地测试服务器
-- `commander` - CLI 参数解析
+- `playwright` - Used for WebKit and Chrome testing
+- `selenium-webdriver` - Used for Firefox testing
+- `http-server` - Local test server
+- `commander` - CLI argument parsing
 
-## 贡献
+## Contributing
 
-欢迎提交 Issue 和 Pull Request！
+Issues and Pull Requests are welcome!
 
-## 许可证
+## License
 
-MIT
+Apache-2.0
