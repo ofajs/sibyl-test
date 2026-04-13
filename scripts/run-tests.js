@@ -253,9 +253,9 @@ async function runBrowserTests(browserConfig, testUrl, rootDir) {
 
 export async function runTests(options = {}) {
   const {
-    browsers = ['webkit', 'chrome', 'firefox'],
+    browsers = ["chrome", "webkit", "firefox"],
     port = 30028,
-    rootDir = process.cwd()
+    rootDir = process.cwd(),
   } = options;
 
   const allBrowsers = [
@@ -273,7 +273,9 @@ export async function runTests(options = {}) {
 
   const testFile = path.join(rootDir, "test-all.html");
   if (!fs.existsSync(testFile)) {
-    console.error(`${colors.red}test-all.html not found. Run generate first.${colors.reset}`);
+    console.error(
+      `${colors.red}test-all.html not found. Run generate first.${colors.reset}`,
+    );
     process.exit(1);
   }
 
@@ -336,7 +338,9 @@ export async function runTests(options = {}) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const browserFilter = process.env.BROWSER;
-  const browsers = browserFilter ? [browserFilter] : ['webkit', 'chrome', 'firefox'];
+  const browsers = browserFilter
+    ? [browserFilter]
+    : ["webkit", "chrome", "firefox"];
   const result = await runTests({ browsers });
   if (!result.success) {
     process.exit(1);

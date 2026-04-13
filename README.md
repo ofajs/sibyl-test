@@ -38,7 +38,7 @@ npx sibyl-test
 <head>
   <meta charset="UTF-8">
   <title>My Tests</title>
-  <script type="module" src="node_modules/sibyl-test/src/components/sb-test.mjs"></script>
+  <script type="module" src="node_modules/sibyl-test/components/sb-test.mjs"></script>
 </head>
 <body>
   <h1>My Tests</h1>
@@ -190,7 +190,7 @@ npm test
 <head>
   <meta charset="UTF-8">
   <title>All Tests</title>
-  <script type="module" src="node_modules/sibyl-test/src/components/sb-test-suite.mjs"></script>
+  <script type="module" src="node_modules/sibyl-test/components/sb-test-suite.mjs"></script>
 </head>
 <body>
   <sb-test-suite>
@@ -301,7 +301,7 @@ jobs:
 生成测试 HTML 文件。
 
 ```javascript
-import { generateTestHtml } from 'sibyl-test/src/scripts/generate-test-html.js';
+import { generateTestHtml } from 'sibyl-test/scripts/generate-test-html.js';
 
 const result = generateTestHtml('/path/to/project');
 console.log(`Found ${result.fileCount} test files`);
@@ -313,7 +313,7 @@ console.log(`Generated: ${result.outputPath}`);
 运行浏览器测试。
 
 ```javascript
-import { runTests } from 'sibyl-test/src/scripts/run-tests.js';
+import { runTests } from 'sibyl-test/scripts/run-tests.js';
 
 const result = await runTests({
   browsers: ['webkit', 'chrome'],

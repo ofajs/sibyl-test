@@ -5,8 +5,8 @@ import { spawn } from "child_process";
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
-import { generateTestHtml } from "./generate-test-html.js";
-import { runTests } from "./run-tests.js";
+import { generateTestHtml } from "../scripts/generate-test-html.js";
+import { runTests } from "../scripts/run-tests.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

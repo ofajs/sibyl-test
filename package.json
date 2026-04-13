@@ -1,27 +1,28 @@
 {
   "name": "sibyl-test",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A lightweight, zero-dependency browser testing framework built on Web Components",
   "type": "module",
-  "main": "src/components/sb-test.mjs",
-  "module": "src/components/sb-test.mjs",
+  "main": "components/sb-test.mjs",
+  "module": "components/sb-test.mjs",
   "bin": {
     "sb-test": "./bin/sb-test.js"
   },
   "exports": {
-    ".": "./src/components/sb-test.mjs",
-    "./sb-test": "./src/components/sb-test.mjs",
-    "./sb-test-suite": "./src/components/sb-test-suite.mjs"
+    ".": "./components/sb-test.mjs",
+    "./sb-test": "./components/sb-test.mjs",
+    "./sb-test-suite": "./components/sb-test-suite.mjs"
   },
   "files": [
-    "src/",
+    "components/",
+    "scripts/",
     "bin/",
     "examples/"
   ],
   "scripts": {
     "test": "node bin/sb-test.js",
-    "test:generate": "node src/scripts/generate-test-html.js",
-    "test:run": "node src/scripts/run-tests.js"
+    "test:generate": "node scripts/generate-test-html.js",
+    "test:run": "node scripts/run-tests.js"
   },
   "keywords": [
     "test",
