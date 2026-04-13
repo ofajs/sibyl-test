@@ -297,31 +297,30 @@ jobs:
 
 ```yaml
 name: Browser Tests
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
+  test-chrome-firefox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ofajs/sibyl-test@v1
+        with:
+          browsers: 'chrome,firefox'
   test-webkit:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: ofajs/sibyl-test@v1
         with:
-          node-version: lts/*
-      - run: npm ci
-      - run: npx playwright install webkit
-      - run: npx sb-test --browsers webkit
-
-  test-chrome:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: xvfb-run npx sb-test --browsers chrome
+          browsers: 'webkit'
 ```
+
+> **ヒント**：WebKit は macOS 上で実行することをお勧めします。Origin Private File System (OPFS) などの高度な API は Linux 環境では制限される場合があります。
 
 ## API
 

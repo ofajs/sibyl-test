@@ -297,31 +297,30 @@ jobs:
 
 ```yaml
 name: Browser Tests
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
+  test-chrome-firefox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ofajs/sibyl-test@v1
+        with:
+          browsers: 'chrome,firefox'
   test-webkit:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: ofajs/sibyl-test@v1
         with:
-          node-version: lts/*
-      - run: npm ci
-      - run: npx playwright install webkit
-      - run: npx sb-test --browsers webkit
-
-  test-chrome:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: xvfb-run npx sb-test --browsers chrome
+          browsers: 'webkit'
 ```
+
+> **Note**: WebKit is recommended to run on macOS for full browser environment support. APIs like Origin Private File System (OPFS) may be limited on Linux environments.
 
 ## API
 
