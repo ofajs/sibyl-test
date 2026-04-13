@@ -38,7 +38,7 @@ npx sibyl-test
 <head>
   <meta charset="UTF-8">
   <title>My Tests</title>
-  <script type="module" src="node_modules/sibyl-test/components/sb-test.mjs"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/gh/ofajs/sibyl-test/components/sb-test-suite.mjs"></script>
 </head>
 <body>
   <h1>My Tests</h1>
