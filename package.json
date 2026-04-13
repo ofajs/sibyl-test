@@ -1,6 +1,6 @@
 {
   "name": "sibyl-test",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A lightweight, zero-dependency browser testing framework built on Web Components",
   "type": "module",
   "main": "components/sb-test.mjs",

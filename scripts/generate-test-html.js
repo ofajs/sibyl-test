@@ -37,9 +37,7 @@ function generateAllHtml(files, outputPath, rootDir) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>All Tests</title>
-    <script type="module">
-      import SbTestSuite from 'sibyl-test/sb-test-suite';
-    </script>
+    <script type="module" src="https://cdn.jsdelivr.net/gh/ofajs/sibyl-test/components/sb-test-suite.mjs"></script>
   </head>
   <body>
     <sb-test-suite>
