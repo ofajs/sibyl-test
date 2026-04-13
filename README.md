@@ -259,7 +259,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: huangyao/sibyl-test@v1
+      - uses: ofajs/sibyl-test@v1
         with:
           browsers: 'webkit,chrome,firefox'
 ```
