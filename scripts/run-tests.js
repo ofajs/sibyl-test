@@ -268,7 +268,7 @@ export async function runTests(options = {}) {
 
   if (selectedBrowsers.length === 0) {
     console.error(`${colors.red}No valid browsers selected${colors.reset}`);
-    process.exit(1);
+    return { success: false, results: [] };
   }
 
   const testFile = path.join(rootDir, "test-all.html");
@@ -276,7 +276,7 @@ export async function runTests(options = {}) {
     console.error(
       `${colors.red}test-all.html not found. Run generate first.${colors.reset}`,
     );
-    process.exit(1);
+    return { success: false, results: [] };
   }
 
   const testUrl = `http://localhost:${port}/test-all.html`;

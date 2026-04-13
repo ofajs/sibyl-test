@@ -70,7 +70,7 @@ async function main() {
     .option("--generate-only", "Only generate test-all.html without running tests", false)
     .option("--run-only", "Only run tests without generating test-all.html", false)
     .option("--install", "Install browser dependencies before running tests", false)
-    .option("--no-cleanup", "Keep test-all.html after tests complete", false)
+    .option("--keep-test-file", "Keep test-all.html after tests complete", false)
     .parse(process.argv);
 
   const options = program.opts();
@@ -100,9 +100,15 @@ async function main() {
 
   if (!options.generateOnly) {
     console.log("\n🚀 Running tests...\n");
-    const testResult = await runTests({ browsers, port, rootDir });
+    let testResult;
+    try {
+      testResult = await runTests({ browsers, port, rootDir });
+    } catch (error) {
+      console.error("Test execution error:", error.message);
+      testResult = { success: false };
+    }
     
-    if (options.cleanup !== false) {
+    if (!options.keepTestFile) {
       const testFile = path.join(rootDir, "test-all.html");
       if (fs.existsSync(testFile)) {
         fs.unlinkSync(testFile);

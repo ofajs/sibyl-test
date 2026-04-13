@@ -1,6 +1,6 @@
 name: 'Sibyl Test'
 description: 'Run browser tests using Sibyl Test framework'
-author: 'huangyao'
+author: 'Yao'
 branding:
   icon: 'check-circle'
   color: 'green'

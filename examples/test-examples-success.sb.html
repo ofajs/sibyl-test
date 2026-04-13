@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Examples - All Passing</title>
+    <script type="module" src="../components/sb-test.mjs"></script>
+  </head>
+  <body>
+    <h1>Unit Test Examples - All Passing</h1>
+
+    <h2>✓ Successful Test</h2>
+    <sb-test name="a plus b should equal 300">
+      <template>
+        <script type="module">
+          const a = 100;
+          const b = 200;
+
+          return {
+            assert: a + b === 300,
+            content: {
+              a,
+              b,
+              sum: a + b,
+            },
+          };
+        </script>
+      </template>
+    </sb-test>
+
+    <h2>✓ Math Test</h2>
+    <sb-test name="x plus y should equal 100">
+      <template>
+        <script>
+          const x = 40;
+          const y = 60;
+
+          return {
+            assert: x + y === 100,
+            content: {
+              x,
+              y,
+              sum: x + y,
+              expected: 100,
+            },
+          };
+        </script>
+      </template>
+    </sb-test>
+
+    <h2>✓ Object Property Test</h2>
+    <sb-test name="Object properties are accessible">
+      <template>
+        <script>
+          const obj = { someProperty: 'Hello World' };
+
+          const value = obj.someProperty;
+
+          return {
+            assert: value === 'Hello World',
+            content: {
+              obj,
+              value,
+            },
+          };
+        </script>
+      </template>
+    </sb-test>
+
+    <h2>✓ Async Test</h2>
+    <sb-test name="Async function test">
+      <template>
+        <script>
+          const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+          await delay(100);
+          const result = 42;
+
+          return {
+            assert: result === 42,
+            content: {
+              result,
+              message: 'Async test passed!'
+            },
+          };
+        </script>
+      </template>
+    </sb-test>
+
+    <h2>✓ Simple Boolean Test</h2>
+    <sb-test name="Simple true assertion">
+      <template>
+        <script>
+          return {
+            assert: true,
+          };
+        </script>
+      </template>
+    </sb-test>
+  </body>
+</html>

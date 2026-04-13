@@ -1,36 +1,27 @@
 # Sibyl Test
 
-一个轻量级、零依赖的浏览器测试框架，基于 Web Components 构建。
+[中文版](readme/cn.md) | [日本語](readme/jp.md)
 
-## 特性
+A lightweight, zero-dependency browser testing framework built with Web Components.
 
-- 🚀 **零依赖** - 核心组件无需安装任何依赖，直接在浏览器中使用
-- 🧩 **Web Components** - 基于 Web Components 构建，可在任何框架中使用
-- 📝 **简单易用** - 使用 HTML 标签编写测试，直观明了
-- ⚡ **并行测试** - 支持并行执行测试，提高测试效率
-- 🌐 **多浏览器支持** - 支持 WebKit、Chrome、Firefox 等多种浏览器
-- 🔧 **CLI 工具** - 提供命令行工具，方便集成到开发流程
-- 🤖 **CI/CD 支持** - 提供 GitHub Action，轻松集成到 CI/CD 流程
+## Features
 
-## 安装
+- 🚀 **Zero Dependencies** - Core components work directly in the browser with no installation required
+- 🧩 **Web Components** - Built on Web Components, usable in any framework
+- 📝 **Simple & Intuitive** - Write tests using HTML tags, straightforward and clear
+- ⚡ **Parallel Testing** - Supports parallel test execution for improved efficiency
+- 🌐 **Multi-Browser Support** - Supports WebKit, Chrome, Firefox and more
+- 🔓 **Non-Incognito Mode** - Uses normal browser mode, can test Service Worker, Origin Private File System and other advanced APIs
+- 🔧 **CLI Tools** - Command-line tools for easy integration into development workflows
+- 🤖 **CI/CD Support** - GitHub Action for seamless CI/CD integration
 
-### 作为项目依赖安装
+## Quick Start
 
-```bash
-npm install sibyl-test --save-dev
-```
+### Use Directly in Browser
 
-### 使用 npx（无需安装）
+Sibyl Test can be used directly in HTML via CDN without any installation. It is recommended to name files with `.sb.html` extension (e.g., `test.sb.html`) for easy automation.
 
-```bash
-npx sibyl-test
-```
-
-## 快速开始
-
-### 1. 创建测试文件
-
-创建一个以 `.sb.html` 结尾的文件，例如 `test.sb.html`：
+Create an HTML file, for example `test.sb.html`:
 
 ```html
 <!doctype html>
@@ -38,17 +29,17 @@ npx sibyl-test
 <head>
   <meta charset="UTF-8">
   <title>My Tests</title>
-  <script type="module" src="node_modules/sibyl-test/components/sb-test.mjs"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/gh/ofajs/sibyl-test/components/sb-test.mjs"></script>
 </head>
 <body>
   <h1>My Tests</h1>
-  
+
   <sb-test name="Simple addition test">
     <template>
       <script>
         const a = 1;
         const b = 2;
-        
+
         return {
           assert: a + b === 3,
           content: { a, b, sum: a + b }
@@ -56,15 +47,15 @@ npx sibyl-test
       </script>
     </template>
   </sb-test>
-  
+
   <sb-test name="Async test example">
     <template>
       <script>
         const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-        
+
         await delay(100);
         const result = 42;
-        
+
         return {
           assert: result === 42,
           content: { result }
@@ -76,71 +67,30 @@ npx sibyl-test
 </html>
 ```
 
-### 2. 运行测试
+### sb-test Component
 
-#### 使用 CLI 工具
+A single test component for writing individual test cases.
 
-```bash
-# 运行所有测试（默认使用 webkit、chrome、firefox）
-npx sb-test
+#### Attributes
 
-# 指定浏览器
-npx sb-test --browsers webkit,chrome
+- `name` - Test name (required)
+- `parallel` - Whether to execute in parallel (optional)
 
-# 只生成测试文件
-npx sb-test --generate-only
+#### Return Value
 
-# 只运行测试（不生成）
-npx sb-test --run-only
-
-# 安装浏览器依赖
-npx sb-test --install
-```
-
-#### 使用 npm scripts
-
-在 `package.json` 中添加：
-
-```json
-{
-  "scripts": {
-    "test": "sb-test"
-  }
-}
-```
-
-然后运行：
-
-```bash
-npm test
-```
-
-## 测试组件
-
-### sb-test
-
-单个测试组件，用于编写独立的测试用例。
-
-#### 属性
-
-- `name` - 测试名称（必填）
-- `parallel` - 是否并行执行（可选）
-
-#### 返回值
-
-测试脚本需要返回一个对象：
+Test scripts need to return an object:
 
 ```javascript
 {
-  assert: boolean,  // 测试是否通过
-  content: any      // 可选，测试结果内容
+  assert: boolean,  // Whether the test passes
+  content: any      // Optional, test result content
 }
 ```
 
-#### 示例
+#### Examples
 
 ```html
-<!-- 基本测试 -->
+<!-- Basic test -->
 <sb-test name="Basic test">
   <template>
     <script>
@@ -151,7 +101,7 @@ npm test
   </template>
 </sb-test>
 
-<!-- 并行测试 -->
+<!-- Parallel test -->
 <sb-test name="Parallel test" parallel>
   <template>
     <script>
@@ -163,12 +113,12 @@ npm test
   </template>
 </sb-test>
 
-<!-- 异步测试 -->
+<!-- Async test -->
 <sb-test name="Async test">
   <template>
     <script>
       const data = await fetch('/api/data').then(r => r.json());
-      
+
       return {
         assert: data.success === true,
         content: data
@@ -178,11 +128,9 @@ npm test
 </sb-test>
 ```
 
-### sb-test-suite
+### sb-test-suite Component
 
-测试套件组件，用于组合多个测试文件。
-
-#### 示例
+Test suite component for combining multiple test files.
 
 ```html
 <!doctype html>
@@ -190,7 +138,7 @@ npm test
 <head>
   <meta charset="UTF-8">
   <title>All Tests</title>
-  <script type="module" src="node_modules/sibyl-test/components/sb-test-suite.mjs"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/gh/ofajs/sibyl-test/components/sb-test-suite.mjs"></script>
 </head>
 <body>
   <sb-test-suite>
@@ -202,49 +150,130 @@ npm test
 </html>
 ```
 
-## CLI 命令
+### FAQ
 
-### 基本用法
+#### How to use ES Modules in tests?
 
-```bash
-sb-test [options]
+```html
+<sb-test name="ES Module test">
+  <template>
+    <script type="module">
+      import { something } from './module.js';
+
+      return {
+        assert: something === 'expected',
+        content: { something }
+      };
+    </script>
+  </template>
+</sb-test>
 ```
 
-### 选项
+#### How to test async operations?
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-b, --browsers <browsers>` | 指定测试浏览器（逗号分隔） | `webkit,chrome,firefox` |
-| `-p, --port <port>` | 测试服务器端口 | `30028` |
-| `--generate-only` | 只生成测试文件 | `false` |
-| `--run-only` | 只运行测试 | `false` |
-| `--install` | 安装浏览器依赖 | `false` |
-| `--no-cleanup` | 测试后保留生成的文件 | `false` |
+```html
+<sb-test name="Async operation test">
+  <template>
+    <script>
+      const result = await someAsyncFunction();
 
-### 示例
+      return {
+        assert: result === 'expected',
+        content: { result }
+      };
+    </script>
+  </template>
+</sb-test>
+```
+
+#### How to skip a test?
+
+You can comment out the entire test tag to skip a test.
+
+## CLI Tools (Multi-Browser Testing)
+
+If you need to run tests across multiple browsers (WebKit, Chrome, Firefox), we provide CLI tools to automate this process.
+
+This command-line tool automatically scans all `.sb.html` files in your project, generates a `test-all.html` file containing all test cases, and runs tests across multiple browser engines.
+
+### Installation
 
 ```bash
-# 运行所有浏览器的测试
+npm install sibyl-test --save-dev
+```
+
+### Basic Usage
+
+```bash
+# Run all tests (default uses webkit, chrome, firefox)
+npx sb-test
+
+# Specify browsers
+npx sb-test --browsers webkit,chrome
+
+# Generate test files only
+npx sb-test --generate-only
+
+# Run tests only (no generation)
+npx sb-test --run-only
+
+# Install browser dependencies
+npx sb-test --install
+```
+
+### Using npm scripts
+
+Add to `package.json`:
+
+```json
+{
+  "scripts": {
+    "test": "sb-test"
+  }
+}
+```
+
+Then run:
+
+```bash
+npm test
+```
+
+### CLI Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-b, --browsers <browsers>` | Browsers to test (comma-separated) | `webkit,chrome,firefox` |
+| `-p, --port <port>` | Test server port | `30028` |
+| `--generate-only` | Generate test files only | `false` |
+| `--run-only` | Run tests only | `false` |
+| `--install` | Install browser dependencies | `false` |
+| `--keep-test-file` | Keep generated test files | `false` |
+
+### Examples
+
+```bash
+# Run tests on all browsers
 sb-test
 
-# 只在 WebKit 中测试
+# Test only on WebKit
 sb-test --browsers webkit
 
-# 在 Chrome 和 Firefox 中测试
+# Test on Chrome and Firefox
 sb-test --browsers chrome,firefox
 
-# 安装浏览器依赖并运行测试
+# Install browser dependencies and run tests
 sb-test --install
 
-# 只生成测试文件
+# Generate test files only
 sb-test --generate-only
 ```
 
-## GitHub Actions 集成
+## GitHub Actions Integration
 
-### 使用预定义的 Action
+### Using the Predefined Action
 
-在你的项目中创建 `.github/workflows/test.yml`：
+Create `.github/workflows/test.yml` in your project:
 
 ```yaml
 name: Browser Tests
@@ -259,12 +288,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: huangyao/sibyl-test@v1
+      - uses: ofajs/sibyl-test@v1
         with:
           browsers: 'webkit,chrome,firefox'
 ```
 
-### 自定义配置
+### Custom Configuration
 
 ```yaml
 name: Browser Tests
@@ -298,7 +327,7 @@ jobs:
 
 ### generateTestHtml(rootDir)
 
-生成测试 HTML 文件。
+Generates the test HTML file.
 
 ```javascript
 import { generateTestHtml } from 'sibyl-test/scripts/generate-test-html.js';
@@ -310,7 +339,7 @@ console.log(`Generated: ${result.outputPath}`);
 
 ### runTests(options)
 
-运行浏览器测试。
+Runs browser tests.
 
 ```javascript
 import { runTests } from 'sibyl-test/scripts/run-tests.js';
@@ -328,99 +357,71 @@ if (result.success) {
 }
 ```
 
-## 工作原理
+## How It Works
 
-1. **生成阶段**：CLI 工具扫描项目中的所有 `.sb.html` 文件，生成一个包含所有测试的 `test-all.html` 文件。
+1. **Generation Phase**: The CLI tool scans all `.sb.html` files in the project and generates a `test-all.html` file containing all tests.
 
-2. **测试阶段**：
-   - 启动本地 HTTP 服务器
-   - 使用 Playwright（WebKit、Chrome）或 Selenium（Firefox）打开测试页面
-   - 等待所有测试完成
-   - 收集并显示测试结果
+2. **Test Phase**:
+   - Starts a local HTTP server
+   - Uses Playwright (WebKit, Chrome) or Selenium (Firefox) to open the test page
+   - Waits for all tests to complete
+   - Collects and displays test results
 
-3. **清理阶段**：删除生成的 `test-all.html` 文件（除非使用 `--no-cleanup` 选项）
+3. **Cleanup Phase**: Deletes the generated `test-all.html` file (unless using `--no-cleanup`)
 
-## 示例项目
+## Example Projects
 
-查看 `examples/` 目录了解更多使用示例：
+See the `examples/` directory for more usage examples:
 
-- [test-examples.sb.html](examples/test-examples.sb.html) - 基本测试示例
-- [test-parallel.sb.html](examples/test-parallel.sb.html) - 并行测试示例
-- [all.html](examples/all.html) - 测试套件示例
+- [test-examples.sb.html](examples/test-examples.sb.html) - Basic test examples
+- [test-parallel.sb.html](examples/test-parallel.sb.html) - Parallel test examples
+- [all.html](examples/all.html) - Test suite example
 
-## 浏览器支持
+## Browser Support
 
 - WebKit (Safari)
 - Chrome / Chromium
 - Firefox
 
-## 依赖说明
+## Dependencies
 
-### 核心组件（浏览器端）
+### Core Components (Browser-side)
 
-无依赖！核心组件基于原生 Web Components 构建，可直接在浏览器中使用。
+Zero dependencies! Core components are built on native Web Components and can be used directly in the browser.
 
-### CLI 工具（Node.js 端）
+### CLI Tools (Node.js-side)
 
-- `playwright` - 用于 WebKit 和 Chrome 测试
-- `selenium-webdriver` - 用于 Firefox 测试
-- `http-server` - 本地测试服务器
-- `commander` - CLI 参数解析
+- `playwright` - Used for WebKit and Chrome testing
+- `selenium-webdriver` - Used for Firefox testing
+- `http-server` - Local test server
+- `commander` - CLI argument parsing
 
-## 常见问题
+## Difference from Playwright/Test
 
-### 如何在测试中使用 ES Modules？
+Playwright/Test runs browsers in incognito mode, which prevents access to certain browser APIs like Service Worker and Origin Private File System. Sibyl Test uses normal browser mode, allowing full access to these APIs.
 
-```html
-<sb-test name="ES Module test">
-  <template>
-    <script type="module">
-      import { something } from './module.js';
-      
-      return {
-        assert: something === 'expected',
-        content: { something }
-      };
-    </script>
-  </template>
-</sb-test>
-```
+Additionally, Playwright/Test uses `spec.js` mode requiring you to learn specific testing syntax. Sibyl Test uses HTML for writing tests without any new syntax to learn — you don't even need to understand the CLI tools. Simply open the HTML file on a static server to run tests and view results.
 
-### 如何测试异步操作？
+Sibyl Test's CLI optimizes the process by packaging test cases into an HTML file first, then running them in the browser, making it faster than Playwright/Test.
 
-```html
-<sb-test name="Async operation test">
-  <template>
-    <script>
-      const result = await someAsyncFunction();
-      
-      return {
-        assert: result === 'expected',
-        content: { result }
-      };
-    </script>
-  </template>
-</sb-test>
-```
+## FAQ
 
-### 如何跳过某个测试？
+### How to use ES Modules in tests?
 
-暂时没有内置的跳过功能，你可以注释掉整个测试标签：
+You can use `import` directly within `<script type="module">` tags.
 
-```html
-<!-- <sb-test name="Skipped test">
-  <template>
-    <script>
-      return { assert: true };
-    </script>
-  </template>
-</sb-test> -->
-```
+### How to test async operations?
 
-## 贡献
+You can test async operations using the `await` keyword in test scripts.
 
-欢迎提交 Issue 和 Pull Request！
+### How to skip a test?
 
-## 许可证
+You can comment out the entire test tag to skip a test.
 
-MIT
+## Contributing
+
+Issues and Pull Requests are welcome!
+
+## License
+
+Apache-2.0
