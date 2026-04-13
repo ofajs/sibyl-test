@@ -15,19 +15,13 @@
 - 🔧 **CLI 工具** - 提供命令行工具，方便集成到开发流程
 - 🤖 **CI/CD 支持** - 提供 GitHub Action，轻松集成到 CI/CD 流程
 
-## 与 Playwright/Test 的区别
-
-Playwright/Test 在隐私模式下运行浏览器，这导致某些浏览器 API 无法使用，例如 Service Worker 和 Origin Private File System。而 Sibyl Test 使用正常模式的浏览器，可以完整访问这些 API。
-
-此外，Playwright/Test 采用 `spec.js` 模式编写测试，需要学习特定的测试语法。Sibyl Test 则使用 HTML 编写测试，无需学习新语法——你甚至不需要了解 CLI 工具，只需要在静态服务器下打开 HTML 文件，即可进行测试并查看结果。
-
 ## 快速开始
 
 ### 直接在浏览器中使用
 
-Sibyl Test 可以直接通过 CDN 在 HTML 中使用，无需任何安装步骤。
+Sibyl Test 可以直接通过 CDN 在 HTML 中使用，无需任何安装步骤。建议创建的文件以 `.sb.html` 结尾，例如 `test.sb.html`，方便后续的自动化测试去使用。
 
-创建一个 HTML 文件，例如 `test.sb.html`：
+例如下面创建一个 HTML 文件，例如 `test.sb.html`：
 
 ```html
 <!doctype html>
@@ -195,6 +189,8 @@ Sibyl Test 可以直接通过 CDN 在 HTML 中使用，无需任何安装步骤�
 ## CLI 工具（多浏览器测试）
 
 如果你需要在多个浏览器（WebKit、Chrome、Firefox）中运行测试，我们提供了 CLI 工具来自动化这一过程。
+
+该命令行工具会自动搜索项目中的所有 `.sb.html` 文件，生成一个包含全部测试用例的 `test-all.html` 文件，并在多种浏览器内核中运行这些测试。
 
 ### 安装
 
@@ -395,6 +391,14 @@ if (result.success) {
 - `selenium-webdriver` - 用于 Firefox 测试
 - `http-server` - 本地测试服务器
 - `commander` - CLI 参数解析
+
+## 与 Playwright/Test 的区别
+
+Playwright/Test 在隐私模式下运行浏览器进行测试，这导致某些浏览器 API 无法使用，例如 Service Worker 和 Origin Private File System。而 Sibyl Test 使用正常模式的浏览器，可以完整访问这些 API。
+
+此外，Playwright/Test 采用 `spec.js` 模式编写测试，需要学习特定的测试语法。Sibyl Test 则使用 HTML 编写测试，无需学习新语法——你甚至不需要了解 CLI 工具，只需在静态服务器下打开 HTML 文件，即可进行测试并查看结果。
+
+Sibyl Test 的 CLI 经过优化，会先将测试用例封装成一个 HTML 文件，然后在浏览器中运行，因此速度比 Playwright/Test 更快。
 
 ## 常见问题
 

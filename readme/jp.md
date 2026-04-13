@@ -15,17 +15,11 @@ Web Components で構築された軽量で依存関係のないブラウザテ�
 - 🔧 **CLI ツール** - 開発ワークフローへの簡単な統合のためのコマンドラインツール
 - 🤖 **CI/CD サポート** - シームレスな CI/CD 統合のための GitHub Action
 
-## Playwright/Test との違い
-
-Playwright/Test はシークレットモードでブラウザを実行するため、Service Worker や Origin Private File System などの特定のブラウザ API にアクセスできません。Sibyl Test は通常のブラウザモードを使用するため、これらの API に完全にアクセス可能です。
-
-さらに、Playwright/Test は `spec.js` モードを使用するため、特定のテスト構文を学ぶ必要があります。Sibyl Test は HTML を使用してテストを記述するため、新しい構文を学ぶ必要がありません。CLI ツールを理解する必要さえなく、単に静的サーバーで HTML ファイルを開くだけでテストを実行し、結果を確認できます。
-
 ## クイックスタート
 
 ### ブラウザで直接使用
 
-Sibyl Test は CDN を通じて HTML で直接使用でき、インストールは不要です。
+Sibyl Test は CDN を通じて HTML で直接使用でき、インストールは不要です。自動化されたテストを実行するには、ファイル名を `.sb.html` にすることを推奨します（例: `test.sb.html`）。
 
 `test.sb.html` などの HTML ファイルを作成します：
 
@@ -156,9 +150,9 @@ Sibyl Test は CDN を通じて HTML で直接使用でき、インストール�
 </html>
 ```
 
-### よくある質問
+### 常に質問
 
-#### テストで ES Modules を使用するには？
+#### ES Modules をテストで使用するには？
 
 ```html
 <sb-test name="ES Module test">
@@ -192,9 +186,15 @@ Sibyl Test は CDN を通じて HTML で直接使用でき、インストール�
 </sb-test>
 ```
 
+#### あるテストをスキップするには？
+
+テスト全体のタグをコメントアウトしてテストをスキップできます。
+
 ## CLI ツール（マルチブラウザテスト）
 
 複数のブラウザ（WebKit、Chrome、Firefox）でテストを実行する必要がある場合、このプロセスを自動化するための CLI ツールを提供しています。
+
+このコマンドラインツールはプロジェクト内のすべての `.sb.html` ファイルを自動的にスキャンし、すべてのテストケースを含む `test-all.html` ファイルを生成して、複数のブラウザエンジンでテストを実行します。
 
 ### インストール
 
@@ -395,6 +395,28 @@ if (result.success) {
 - `selenium-webdriver` - Firefox テストに使用
 - `http-server` - ローカルテストサーバー
 - `commander` - CLI 引数解析
+
+## 与 Playwright/Test の違い
+
+Playwright/Test はシークレットモードでブラウザを実行するため、Service Worker や Origin Private File System などの特定のブラウザ API にアクセスできません。Sibyl Test は通常のブラウザモードを使用するため、これらの API に完全にアクセス可能です。
+
+さらに、Playwright/Test は `spec.js` モードを使用するため、特定のテスト構文を学ぶ必要があります。Sibyl Test は HTML を使用してテストを記述するため、新しい構文を学ぶ必要がありません。CLI ツールを理解する必要さえなく、単に静的サーバーで HTML ファイルを開くだけでテストを実行し、結果を確認できます。
+
+Sibyl Test の CLI はテストケースを HTML ファイルにパッケージ化してからブラウザで実行するため、Playwright/Test よりも高速です。
+
+## 常に質問
+
+### ES Modules をテストで使用するには？
+
+`<script type="module">` タグ内で直接 `import` を使用できます。
+
+### 非同期操作をテストするには？
+
+テストスクリプト内で `await` キーワードを使用して非同期操作をテストできます。
+
+### あるテストをスキップするには？
+
+テスト全体のタグをコメントアウトしてテストをスキップできます。
 
 ## 貢献
 

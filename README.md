@@ -15,17 +15,11 @@ A lightweight, zero-dependency browser testing framework built with Web Componen
 - 🔧 **CLI Tools** - Command-line tools for easy integration into development workflows
 - 🤖 **CI/CD Support** - GitHub Action for seamless CI/CD integration
 
-## Difference from Playwright/Test
-
-Playwright/Test runs browsers in incognito mode, which prevents access to certain browser APIs like Service Worker and Origin Private File System. Sibyl Test uses normal browser mode, allowing full access to these APIs.
-
-Additionally, Playwright/Test uses `spec.js` mode requiring you to learn specific testing syntax. Sibyl Test uses HTML for writing tests without any new syntax to learn — you don't even need to understand the CLI tools. Simply open the HTML file on a static server to run tests and view results.
-
 ## Quick Start
 
 ### Use Directly in Browser
 
-Sibyl Test can be used directly in HTML via CDN without any installation.
+Sibyl Test can be used directly in HTML via CDN without any installation. It is recommended to name files with `.sb.html` extension (e.g., `test.sb.html`) for easy automation.
 
 Create an HTML file, for example `test.sb.html`:
 
@@ -192,9 +186,15 @@ Test suite component for combining multiple test files.
 </sb-test>
 ```
 
+#### How to skip a test?
+
+You can comment out the entire test tag to skip a test.
+
 ## CLI Tools (Multi-Browser Testing)
 
 If you need to run tests across multiple browsers (WebKit, Chrome, Firefox), we provide CLI tools to automate this process.
+
+This command-line tool automatically scans all `.sb.html` files in your project, generates a `test-all.html` file containing all test cases, and runs tests across multiple browser engines.
 
 ### Installation
 
@@ -395,6 +395,28 @@ Zero dependencies! Core components are built on native Web Components and can be
 - `selenium-webdriver` - Used for Firefox testing
 - `http-server` - Local test server
 - `commander` - CLI argument parsing
+
+## Difference from Playwright/Test
+
+Playwright/Test runs browsers in incognito mode, which prevents access to certain browser APIs like Service Worker and Origin Private File System. Sibyl Test uses normal browser mode, allowing full access to these APIs.
+
+Additionally, Playwright/Test uses `spec.js` mode requiring you to learn specific testing syntax. Sibyl Test uses HTML for writing tests without any new syntax to learn — you don't even need to understand the CLI tools. Simply open the HTML file on a static server to run tests and view results.
+
+Sibyl Test's CLI optimizes the process by packaging test cases into an HTML file first, then running them in the browser, making it faster than Playwright/Test.
+
+## FAQ
+
+### How to use ES Modules in tests?
+
+You can use `import` directly within `<script type="module">` tags.
+
+### How to test async operations?
+
+You can test async operations using the `await` keyword in test scripts.
+
+### How to skip a test?
+
+You can comment out the entire test tag to skip a test.
 
 ## Contributing
 
