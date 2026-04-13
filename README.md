@@ -12,25 +12,13 @@
 - 🔧 **CLI 工具** - 提供命令行工具，方便集成到开发流程
 - 🤖 **CI/CD 支持** - 提供 GitHub Action，轻松集成到 CI/CD 流程
 
-## 安装
-
-### 作为项目依赖安装
-
-```bash
-npm install sibyl-test --save-dev
-```
-
-### 使用 npx（无需安装）
-
-```bash
-npx sibyl-test
-```
-
 ## 快速开始
 
-### 1. 创建测试文件
+### 直接在浏览器中使用
 
-创建一个以 `.sb.html` 结尾的文件，例如 `test.sb.html`：
+Sibyl Test 可以直接通过 CDN 在 HTML 中使用，无需任何安装步骤。
+
+创建一个 HTML 文件，例如 `test.sb.html`：
 
 ```html
 <!doctype html>
@@ -42,13 +30,13 @@ npx sibyl-test
 </head>
 <body>
   <h1>My Tests</h1>
-  
+
   <sb-test name="Simple addition test">
     <template>
       <script>
         const a = 1;
         const b = 2;
-        
+
         return {
           assert: a + b === 3,
           content: { a, b, sum: a + b }
@@ -56,15 +44,15 @@ npx sibyl-test
       </script>
     </template>
   </sb-test>
-  
+
   <sb-test name="Async test example">
     <template>
       <script>
         const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-        
+
         await delay(100);
         const result = 42;
-        
+
         return {
           assert: result === 42,
           content: { result }
@@ -76,48 +64,7 @@ npx sibyl-test
 </html>
 ```
 
-### 2. 运行测试
-
-#### 使用 CLI 工具
-
-```bash
-# 运行所有测试（默认使用 webkit、chrome、firefox）
-npx sb-test
-
-# 指定浏览器
-npx sb-test --browsers webkit,chrome
-
-# 只生成测试文件
-npx sb-test --generate-only
-
-# 只运行测试（不生成）
-npx sb-test --run-only
-
-# 安装浏览器依赖
-npx sb-test --install
-```
-
-#### 使用 npm scripts
-
-在 `package.json` 中添加：
-
-```json
-{
-  "scripts": {
-    "test": "sb-test"
-  }
-}
-```
-
-然后运行：
-
-```bash
-npm test
-```
-
-## 测试组件
-
-### sb-test
+### sb-test 组件
 
 单个测试组件，用于编写独立的测试用例。
 
@@ -168,7 +115,7 @@ npm test
   <template>
     <script>
       const data = await fetch('/api/data').then(r => r.json());
-      
+
       return {
         assert: data.success === true,
         content: data
@@ -178,11 +125,9 @@ npm test
 </sb-test>
 ```
 
-### sb-test-suite
+### sb-test-suite 组件
 
 测试套件组件，用于组合多个测试文件。
-
-#### 示例
 
 ```html
 <!doctype html>
@@ -202,15 +147,90 @@ npm test
 </html>
 ```
 
-## CLI 命令
+### 常见问题
+
+#### 如何在测试中使用 ES Modules？
+
+```html
+<sb-test name="ES Module test">
+  <template>
+    <script type="module">
+      import { something } from './module.js';
+
+      return {
+        assert: something === 'expected',
+        content: { something }
+      };
+    </script>
+  </template>
+</sb-test>
+```
+
+#### 如何测试异步操作？
+
+```html
+<sb-test name="Async operation test">
+  <template>
+    <script>
+      const result = await someAsyncFunction();
+
+      return {
+        assert: result === 'expected',
+        content: { result }
+      };
+    </script>
+  </template>
+</sb-test>
+```
+
+## CLI 工具（多浏览器测试）
+
+如果你需要在多个浏览器（WebKit、Chrome、Firefox）中运行测试，我们提供了 CLI 工具来自动化这一过程。
+
+### 安装
+
+```bash
+npm install sibyl-test --save-dev
+```
 
 ### 基本用法
 
 ```bash
-sb-test [options]
+# 运行所有测试（默认使用 webkit、chrome、firefox）
+npx sb-test
+
+# 指定浏览器
+npx sb-test --browsers webkit,chrome
+
+# 只生成测试文件
+npx sb-test --generate-only
+
+# 只运行测试（不生成）
+npx sb-test --run-only
+
+# 安装浏览器依赖
+npx sb-test --install
 ```
 
-### 选项
+### 使用 npm scripts
+
+在 `package.json` 中添加：
+
+```json
+{
+  "scripts": {
+    "test": "sb-test"
+  }
+}
+```
+
+然后运行：
+
+```bash
+npm test
+```
+
+### CLI 选项
 
 | 选项 | 说明 | 默认值 |
 |------|------|--------|
@@ -366,56 +386,6 @@ if (result.success) {
 - `selenium-webdriver` - 用于 Firefox 测试
 - `http-server` - 本地测试服务器
 - `commander` - CLI 参数解析
-
-## 常见问题
-
-### 如何在测试中使用 ES Modules？
-
-```html
-<sb-test name="ES Module test">
-  <template>
-    <script type="module">
-      import { something } from './module.js';
-      
-      return {
-        assert: something === 'expected',
-        content: { something }
-      };
-    </script>
-  </template>
-</sb-test>
-```
-
-### 如何测试异步操作？
-
-```html
-<sb-test name="Async operation test">
-  <template>
-    <script>
-      const result = await someAsyncFunction();
-      
-      return {
-        assert: result === 'expected',
-        content: { result }
-      };
-    </script>
-  </template>
-</sb-test>
-```
-
-### 如何跳过某个测试？
-
-暂时没有内置的跳过功能，你可以注释掉整个测试标签：
-
-```html
-<!-- <sb-test name="Skipped test">
-  <template>
-    <script>
-      return { assert: true };
-    </script>
-  </template>
-</sb-test> -->
-```
 
 ## 贡献
 
