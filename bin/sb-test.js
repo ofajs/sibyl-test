@@ -100,7 +100,13 @@ async function main() {
 
   if (!options.generateOnly) {
     console.log("\n🚀 Running tests...\n");
-    const testResult = await runTests({ browsers, port, rootDir });
+    let testResult;
+    try {
+      testResult = await runTests({ browsers, port, rootDir });
+    } catch (error) {
+      console.error("Test execution error:", error.message);
+      testResult = { success: false };
+    }
     
     if (options.cleanup !== false) {
       const testFile = path.join(rootDir, "test-all.html");
