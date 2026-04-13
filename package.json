@@ -1,0 +1,54 @@
+{
+  "name": "sibyl-test",
+  "version": "0.1.0",
+  "description": "A lightweight, zero-dependency browser testing framework built on Web Components",
+  "type": "module",
+  "main": "src/components/sb-test.mjs",
+  "module": "src/components/sb-test.mjs",
+  "bin": {
+    "sb-test": "./bin/sb-test.js"
+  },
+  "exports": {
+    ".": "./src/components/sb-test.mjs",
+    "./sb-test": "./src/components/sb-test.mjs",
+    "./sb-test-suite": "./src/components/sb-test-suite.mjs"
+  },
+  "files": [
+    "src/",
+    "bin/",
+    "examples/"
+  ],
+  "scripts": {
+    "test": "node bin/sb-test.js",
+    "test:generate": "node src/scripts/generate-test-html.js",
+    "test:run": "node src/scripts/run-tests.js"
+  },
+  "keywords": [
+    "test",
+    "testing",
+    "browser",
+    "web-components",
+    "web-component",
+    "zero-dependency"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ofajs/sibyl-test.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ofajs/sibyl-test/issues"
+  },
+  "homepage": "https://github.com/ofajs/sibyl-test#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1",
+    "playwright": "^1.40.0",
+    "selenium-webdriver": "^4.16.0",
+    "commander": "^11.1.0"
+  },
+  "devDependencies": {}
+}
