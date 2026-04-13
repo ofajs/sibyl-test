@@ -36,7 +36,16 @@ runs:
     - name: Install Playwright browsers
       shell: bash
       run: |
-        npx playwright install --with-deps webkit chromium
+        PLAYWRIGHT_BROWSERS=""
+        if echo "${{ inputs.browsers }}" | grep -q "webkit"; then
+          PLAYWRIGHT_BROWSERS="$PLAYWRIGHT_BROWSERS webkit"
+        fi
+        if echo "${{ inputs.browsers }}" | grep -q "chrome"; then
+          PLAYWRIGHT_BROWSERS="$PLAYWRIGHT_BROWSERS chromium"
+        fi
+        if [ -n "$PLAYWRIGHT_BROWSERS" ]; then
+          npx playwright install --with-deps $PLAYWRIGHT_BROWSERS
+        fi
     
     - name: Install Firefox
       if: runner.os == 'Linux'
