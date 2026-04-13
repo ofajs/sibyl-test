@@ -219,7 +219,7 @@ sb-test [options]
 | `--generate-only` | 只生成测试文件 | `false` |
 | `--run-only` | 只运行测试 | `false` |
 | `--install` | 安装浏览器依赖 | `false` |
-| `--no-cleanup` | 测试后保留生成的文件 | `false` |
+| `--keep-test-file` | 保留生成的测试文件 | `false` |
 
 ### 示例
 
