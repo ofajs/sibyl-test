@@ -286,13 +286,17 @@ export default class SbTest extends HTMLElement {
     nameEl.textContent = name;
 
     if (!success) {
-      errorMsgEl.textContent = `Assertion failed: expected true but got ${result && result.assert}`;
+      let msg = `Assertion failed: expected true but got ${result && result.assert}`;
+      if (result && result.content != null) {
+        msg += `\nContent: ${typeof result.content === "object" ? JSON.stringify(result.content, null, 2) : String(result.content)}`;
+      }
+      errorMsgEl.textContent = msg;
     } else {
       errorMsgEl.remove();
     }
 
-    if (result && result.content) {
-      contentEl.textContent = JSON.stringify(result.content, null, 2);
+    if (result && result.content != null) {
+      contentEl.textContent = typeof result.content === "object" ? JSON.stringify(result.content, null, 2) : String(result.content);
     } else {
       contentEl.remove();
     }

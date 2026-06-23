@@ -81,12 +81,14 @@ async function getTestStats(page, evaluateFn) {
         const nameEl = item.querySelector(".result-name");
         const errorMsgEl = item.querySelector(".error-msg");
         const errorStackEl = item.querySelector(".error-stack");
+        const resultContentEl = item.querySelector(".result-content");
 
         failedTests.push({
           url: url,
           name: nameEl ? nameEl.textContent.trim() : "Unknown",
           message: errorMsgEl ? errorMsgEl.textContent.trim() : "",
           stack: errorStackEl ? errorStackEl.textContent.trim() : "",
+          content: resultContentEl ? resultContentEl.textContent.trim() : "",
         });
       });
     });
@@ -126,6 +128,11 @@ function printTestResults(name, result, stats) {
       if (test.message) {
         console.log(
           `   ${colors.cyan}Error:${colors.reset} ${colors.red}${test.message}${colors.reset}`,
+        );
+      }
+      if (test.content) {
+        console.log(
+          `   ${colors.cyan}Content:${colors.reset}\n${colors.yellow}${test.content}${colors.reset}`,
         );
       }
       if (test.stack) {
