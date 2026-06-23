@@ -271,15 +271,23 @@ export default class SbTestSuite extends HTMLElement {
 
           if (!r.success) {
             if (r.result && typeof r.result === "object" && r.result.message) {
-              groupHtml += `<div class="error-msg">Error: ${this.escapeHtml(r.result.message)}</div>`;
+              let msg = `Error: ${this.escapeHtml(r.result.message)}`;
+              if (r.result.content != null) {
+                msg += `\nContent: ${this.escapeHtml(r.result.content)}`;
+              }
+              groupHtml += `<div class="error-msg">${msg}</div>`;
               if (r.result.stack) {
                 groupHtml += `<div class="error-stack">${this.escapeHtml(r.result.stack)}</div>`;
               }
             } else {
-              groupHtml += `<div class="error-msg">Assertion failed: expected true but got ${this.escapeHtml(JSON.stringify(r.result && r.result.assert))}</div>`;
+              let msg = `Assertion failed: expected true but got ${this.escapeHtml(JSON.stringify(r.result && r.result.assert))}`;
+              if (r.result && r.result.content != null) {
+                msg += `\nContent: ${this.escapeHtml(r.result.content)}`;
+              }
+              groupHtml += `<div class="error-msg">${msg}</div>`;
             }
-            if (r.result && r.result.content) {
-              groupHtml += `<div class="result-content">${this.escapeHtml(JSON.stringify(r.result.content, null, 2))}</div>`;
+            if (r.result && r.result.content != null) {
+              groupHtml += `<div class="result-content">${this.escapeHtml(r.result.content)}</div>`;
             }
           } else {
             if (r.result && r.result.content) {
@@ -298,8 +306,9 @@ export default class SbTestSuite extends HTMLElement {
 
   escapeHtml(text) {
     if (text == null) return "";
+    const str = typeof text === "object" ? JSON.stringify(text, null, 2) : String(text);
     const div = document.createElement("div");
-    div.textContent = String(text);
+    div.textContent = str;
     return div.innerHTML;
   }
 }
