@@ -47,7 +47,7 @@ async function waitForTestResults(page, evaluateFn) {
       const error = suite.errorTests || 0;
       const pendingUrls = suite.pendingUrls ? suite.pendingUrls.length : 0;
 
-      if (total > 0 && success + error === total && pendingUrls === 0) {
+      if (pendingUrls === 0 && (total === 0 || success + error === total)) {
         return { finished: true, hasError: error > 0 };
       }
       return false;

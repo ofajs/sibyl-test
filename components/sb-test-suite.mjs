@@ -166,9 +166,8 @@ export default class SbTestSuite extends HTMLElement {
     if (!this.templateReady) return;
 
     const isFinished =
-      this.totalTests > 0 &&
-      this.successTests + this.errorTests === this.totalTests &&
-      this.pendingUrls.length === 0;
+      this.pendingUrls.length === 0 &&
+      (this.totalTests === 0 || this.successTests + this.errorTests === this.totalTests);
     const isSuccess = isFinished && this.errorTests === 0;
     const isFailure = this.errorTests > 0;
 
