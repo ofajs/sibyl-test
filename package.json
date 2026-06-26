@@ -1,6 +1,6 @@
 {
   "name": "sibyl-test",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A lightweight, zero-dependency browser testing framework built on Web Components",
   "type": "module",
   "main": "components/sb-test.mjs",
@@ -22,7 +22,8 @@
   "scripts": {
     "test": "node bin/sb-test.js",
     "test:generate": "node scripts/generate-test-html.js",
-    "test:run": "node scripts/run-tests.js"
+    "test:run": "node scripts/run-tests.js",
+    "static": "http-server --port 30028 -c-1 --cors"
   },
   "keywords": [
     "test",

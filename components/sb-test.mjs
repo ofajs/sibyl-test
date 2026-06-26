@@ -2,6 +2,42 @@ export default class SbTest extends HTMLElement {
   static templatePromise = null;
   static testQueue = [];
   static isRunning = false;
+  static summaryData = { success: 0, fail: 0 };
+  static summaryEl = null;
+
+  static initSummary() {
+    const total = document.querySelectorAll("sb-test").length;
+    if (total === 0) return;
+
+    const h1 = document.querySelector("h1");
+    if (!h1) return;
+
+    h1.style.display = "flex";
+    h1.style.justifyContent = "space-between";
+    h1.style.alignItems = "center";
+
+    SbTest.summaryEl = document.createElement("span");
+    SbTest.summaryEl.style.cssText =
+      "font-size: 0.65em; font-weight: normal; opacity: 0.7;";
+    h1.appendChild(SbTest.summaryEl);
+    SbTest.updateSummaryDisplay(total);
+  }
+
+  static updateSummaryDisplay(total) {
+    if (!SbTest.summaryEl) return;
+    const { success, fail } = SbTest.summaryData;
+    const totalCount = total || document.querySelectorAll("sb-test").length;
+    SbTest.summaryEl.textContent = `✓ ${success} | ✗ ${fail} | 总计 ${totalCount}`;
+  }
+
+  static recordResult(success) {
+    if (success) {
+      SbTest.summaryData.success++;
+    } else {
+      SbTest.summaryData.fail++;
+    }
+    SbTest.updateSummaryDisplay();
+  }
 
   constructor() {
     super();
@@ -42,7 +78,9 @@ export default class SbTest extends HTMLElement {
     const isParallel = this.hasAttribute("parallel");
 
     const executeTest = () => {
-      const name = this.getAttribute("name") || "Unnamed Test";
+      SbTest.testCounter = (SbTest.testCounter || 0) + 1;
+      const baseName = this.getAttribute("name") || "Unnamed Test";
+      const name = `${SbTest.testCounter}. ${baseName}`;
       const template = this.querySelector("template");
 
       if (!template) {
@@ -218,13 +256,10 @@ export default class SbTest extends HTMLElement {
       const module = await import(url);
       const result = await module.default();
 
-      if (result && result.assert === true) {
-        this.showResult(name, result, true, templates);
-        this.notifyParent(name, result, true);
-      } else {
-        this.showResult(name, result, false, templates);
-        this.notifyParent(name, result, false);
-      }
+      const success = result && result.assert === true;
+      this.showResult(name, result, success, templates);
+      this.notifyParent(name, result, success);
+      SbTest.recordResult(success);
     } catch (error) {
       if (error instanceof Error && error.stack && url) {
         error.stack = error.stack.split(url).join(sourceURL);
@@ -238,6 +273,7 @@ export default class SbTest extends HTMLElement {
         },
         false,
       );
+      SbTest.recordResult(false);
     }
   }
 
@@ -350,6 +386,8 @@ export default class SbTest extends HTMLElement {
 }
 
 customElements.define("sb-test", SbTest);
+
+setTimeout(() => SbTest.initSummary(), 0);
 
 if (window.parent !== window) {
   setTimeout(() => {
