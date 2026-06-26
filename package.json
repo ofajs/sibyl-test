@@ -23,7 +23,7 @@
     "test": "node bin/sb-test.js",
     "test:generate": "node scripts/generate-test-html.js",
     "test:run": "node scripts/run-tests.js",
-    "static": "http-server --port 30028"
+    "static": "http-server --port 30028 -c-1 --cors"
   },
   "keywords": [
     "test",
