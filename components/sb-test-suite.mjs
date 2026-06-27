@@ -97,6 +97,20 @@ export default class SbTestSuite extends HTMLElement {
     window.removeEventListener("message", this.handleMessage);
   }
 
+  removeIframe(url) {
+    const iframeData = this.iframes.get(url);
+    if (iframeData && iframeData.iframe) {
+      const iframe = iframeData.iframe;
+      // 先从 DOM 移除，再用空 srcdoc 清空内部页面，避免 about:blank 触发 DevTools 注入报错
+      if (iframe.parentNode) {
+        iframe.parentNode.removeChild(iframe);
+      }
+      iframe.srcdoc = "";
+      iframe.src = "";
+      iframeData.iframe = null;
+    }
+  }
+
   handleMessage(event) {
     const data = event.data;
     if (!data || typeof data !== "object") return;
@@ -116,6 +130,7 @@ export default class SbTestSuite extends HTMLElement {
           url === this.currentUrl &&
           iframeData.results.length === data.count
         ) {
+          this.removeIframe(url);
           this.runNextIframe();
         }
       }
@@ -135,6 +150,7 @@ export default class SbTestSuite extends HTMLElement {
           url === this.currentUrl &&
           iframeData.results.length === iframeData.total
         ) {
+          this.removeIframe(url);
           this.runNextIframe();
         }
       }

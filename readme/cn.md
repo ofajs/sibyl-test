@@ -403,7 +403,7 @@ Sibyl Test 的 CLI 经过优化，会先将测试用例封装成一个 HTML 文�
 
 ### 如何在测试中使用 ES Modules？
 
-在 `<script type="module">` 标签中直接使用 `import` 即可。
+只需在 `<script type="module">` 标签内直接使用 `import` 语法引入模块即可，目前暂不支持 `import as` 这种命名空间导入方式。
 
 ### 如何测试异步操作？
 
