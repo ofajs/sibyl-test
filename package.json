@@ -11,7 +11,8 @@
   "exports": {
     ".": "./components/sb-test.mjs",
     "./sb-test": "./components/sb-test.mjs",
-    "./sb-test-suite": "./components/sb-test-suite.mjs"
+    "./sb-test-suite": "./components/sb-test-suite.mjs",
+    "./scripts/*": "./scripts/*"
   },
   "files": [
     "components/",
