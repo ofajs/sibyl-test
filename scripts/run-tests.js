@@ -6,8 +6,6 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 const colors = {
   reset: "\x1b[0m",
   bright: "\x1b[1m",

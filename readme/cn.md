@@ -241,6 +241,7 @@ npm test
 |------|------|--------|
 | `-b, --browsers <browsers>` | 指定测试浏览器（逗号分隔） | `webkit,chrome,firefox` |
 | `-p, --port <port>` | 测试服务器端口 | `30028` |
+| `-f, --file <path>` | 只测试单个 `.sb.html` 文件 | 所有文件 |
 | `--generate-only` | 只生成测试文件 | `false` |
 | `--run-only` | 只运行测试 | `false` |
 | `--install` | 安装浏览器依赖 | `false` |
@@ -257,6 +258,12 @@ sb-test --browsers webkit
 
 # 在 Chrome 和 Firefox 中测试
 sb-test --browsers chrome,firefox
+
+# 只测试单个文件
+sb-test -f test/foo.sb.html
+
+# 测试单个文件，仅使用 Firefox
+sb-test -f test/foo.sb.html -b firefox
 
 # 安装浏览器依赖并运行测试
 sb-test --install
