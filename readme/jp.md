@@ -245,6 +245,7 @@ npm test
 |-----------|------|-----------|
 | `-b, --browsers <browsers>` | テストするブラウザ（カンマ区切り） | `webkit,chrome,firefox` |
 | `-p, --port <port>` | テストサーバーのポート | `30028` |
+| `-f, --file <path>` | テストする単一の `.sb.html` ファイル | すべてのファイル |
 | `--generate-only` | テストファイルのみ生成 | `false` |
 | `--run-only` | テストのみ実行 | `false` |
 | `--install` | ブラウザ依存関係をインストール | `false` |
@@ -264,6 +265,12 @@ sb-test --browsers chrome,firefox
 
 # ブラウザ依存関係をインストールしてテストを実行
 sb-test --install
+
+# 単一ファイルのみテスト
+sb-test -f test/foo.sb.html
+
+# 単一ファイルを Firefox のみでテスト
+sb-test -f test/foo.sb.html -b firefox
 
 # テストファイルのみ生成
 sb-test --generate-only
@@ -407,7 +414,7 @@ Sibyl Test の CLI はテストケースを HTML ファイルにパッケージ�
 
 ### ES Modules をテストで使用するには？
 
-`<script type="module">` タグ内で直接 `import` を使用できます。
+`<script type="module">` タグ内で直接 `import` を使用できます。ただし、`import * as` のような名前空間インポートは現在サポートされていません。
 
 ### 非同期操作をテストするには？
 
