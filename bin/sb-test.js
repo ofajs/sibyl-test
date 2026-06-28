@@ -70,6 +70,11 @@ Examples:
   $ sb-test --install              Install browser dependencies
   $ sb-test --generate-only        Only generate test-all.html
   $ sb-test --run-only             Only run tests (skip generation)
+
+Language:
+  $ sb-test --help                 Show English help
+  $ sb-test --help zh              显示中文帮助
+  $ sb-test --help jp              Show Japanese help (日本語ヘルプ)
 `;
 
 const helpZh = `
@@ -81,6 +86,27 @@ const helpZh = `
   $ sb-test --install              安装浏览器依赖
   $ sb-test --generate-only        仅生成 test-all.html，不运行测试
   $ sb-test --run-only             仅运行测试，跳过生成阶段
+
+语言切换：
+  $ sb-test --help                 Show English help
+  $ sb-test --help zh              显示中文帮助
+  $ sb-test --help jp              Show Japanese help (日本語ヘルプ)
+`;
+
+const helpJa = `
+例：
+  $ sb-test                        デフォルトブラウザですべてのテストを実行
+  $ sb-test -b webkit,chrome       WebKit と Chrome のみでテスト
+  $ sb-test -f test/foo.sb.html    単一ファイルをテスト
+  $ sb-test -f test/foo.sb.html -b firefox  単一ファイルを Firefox のみでテスト
+  $ sb-test --install              ブラウザ依存関係をインストール
+  $ sb-test --generate-only        test-all.html のみを生成（テストは実行しない）
+  $ sb-test --run-only             生成をスキップしてテストのみ実行
+
+言語切替：
+  $ sb-test --help                 Show English help
+  $ sb-test --help zh              显示中文帮助
+  $ sb-test --help jp              Show Japanese help (日本語ヘルプ)
 `;
 
 function cleanArgsForHelp() {
@@ -89,7 +115,7 @@ function cleanArgsForHelp() {
   let skipNext = false;
   for (let i = 0; i < args.length; i++) {
     if (skipNext) { skipNext = false; continue; }
-    if ((args[i] === '--help' || args[i] === '-h') && i + 1 < args.length && (args[i + 1] === 'zh' || args[i + 1] === 'cn')) {
+    if ((args[i] === '--help' || args[i] === '-h') && i + 1 < args.length && (args[i + 1] === 'zh' || args[i + 1] === 'jp')) {
       result.push(args[i]);
       skipNext = true;
     } else {
@@ -99,18 +125,21 @@ function cleanArgsForHelp() {
   return [process.argv[0], process.argv[1], ...result];
 }
 
-function isZhHelp() {
+function detectHelpLang() {
   const args = process.argv;
   const helpIdx = args.findIndex(a => a === '--help' || a === '-h');
-  if (helpIdx === -1) return false;
-  return args[helpIdx + 1] === 'zh' || args[helpIdx + 1] === 'cn';
+  if (helpIdx === -1) return 'en';
+  const lang = args[helpIdx + 1];
+  if (lang === 'zh') return 'zh';
+  if (lang === 'jp') return 'jp';
+  return 'en';
 }
 
 async function main() {
-  const showZh = isZhHelp();
+  const lang = detectHelpLang();
   const cleanedArgs = cleanArgsForHelp();
 
-  if (showZh) {
+  if (lang === 'zh') {
     program
       .name("sb-test")
       .description("Sibyl Test - 轻量级浏览器测试框架")
@@ -123,6 +152,20 @@ async function main() {
       .option("--keep-test-file", "测试完成后保留 test-all.html", false)
       .option("-f, --file <path>", "测试单个 .sb.html 文件，而非所有文件")
       .addHelpText("after", helpZh)
+      .parse(cleanedArgs);
+  } else if (lang === 'jp') {
+    program
+      .name("sb-test")
+      .description("Sibyl Test - 軽量ブラウザテストフレームワーク")
+      .version(pkg.version)
+      .option("-b, --browsers <browsers>", "テストするブラウザをカンマ区切りで指定 (webkit,chrome,firefox)", "webkit,chrome,firefox")
+      .option("-p, --port <port>", "テストサーバーのポート", "30028")
+      .option("--generate-only", "test-all.html のみを生成（テストは実行しない）", false)
+      .option("--run-only", "生成をスキップしてテストのみ実行", false)
+      .option("--install", "テスト実行前にブラウザ依存関係をインストール", false)
+      .option("--keep-test-file", "テスト完了後も test-all.html を保持", false)
+      .option("-f, --file <path>", "単一の .sb.html ファイルをテスト")
+      .addHelpText("after", helpJa)
       .parse(cleanedArgs);
   } else {
     program
