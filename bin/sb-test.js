@@ -5,7 +5,7 @@ import { spawn } from "child_process";
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
-import { generateTestHtml } from "../scripts/generate-test-html.js";
+import { generateTestHtml, generateSingleTestHtml } from "../scripts/generate-test-html.js";
 import { runTests } from "../scripts/run-tests.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -71,6 +71,7 @@ async function main() {
     .option("--run-only", "Only run tests without generating test-all.html", false)
     .option("--install", "Install browser dependencies before running tests", false)
     .option("--keep-test-file", "Keep test-all.html after tests complete", false)
+    .option("-f, --file <path>", "Test a single .sb.html file instead of all files")
     .parse(process.argv);
 
   const options = program.opts();
@@ -89,12 +90,21 @@ async function main() {
   }
 
   if (!options.runOnly) {
-    console.log("\n📝 Generating test-all.html...");
-    const result = generateTestHtml(rootDir);
-    
-    if (result.fileCount === 0) {
-      console.log("No .sb.html files found in the project.");
-      process.exit(0);
+    if (options.file) {
+      console.log(`\n📝 Generating test-all.html for single file: ${options.file}...`);
+      const result = generateSingleTestHtml(rootDir, options.file);
+
+      if (result.fileCount === 0) {
+        process.exit(1);
+      }
+    } else {
+      console.log("\n📝 Generating test-all.html...");
+      const result = generateTestHtml(rootDir);
+
+      if (result.fileCount === 0) {
+        console.log("No .sb.html files found in the project.");
+        process.exit(0);
+      }
     }
   }
 

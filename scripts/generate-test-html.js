@@ -65,6 +65,38 @@ export function generateTestHtml(rootDir) {
   };
 }
 
+export function generateSingleTestHtml(rootDir, filePath) {
+  const resolvedPath = path.resolve(rootDir, filePath);
+  const relativePath = path.relative(rootDir, resolvedPath);
+  const outputFilePath = path.join(rootDir, "test-all.html");
+
+  if (!fs.existsSync(resolvedPath)) {
+    console.error(`File not found: ${resolvedPath}`);
+    return {
+      fileCount: 0,
+      outputPath: outputFilePath
+    };
+  }
+
+  if (!resolvedPath.endsWith(".sb.html")) {
+    console.error(`Not a .sb.html file: ${filePath}`);
+    return {
+      fileCount: 0,
+      outputPath: outputFilePath
+    };
+  }
+
+  generateAllHtml([relativePath], outputFilePath, rootDir);
+
+  console.log(`Generated single test file: ${relativePath}`);
+  console.log(`Generated: ${outputFilePath}`);
+
+  return {
+    fileCount: 1,
+    outputPath: outputFilePath
+  };
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const rootDir = process.cwd();
   generateTestHtml(rootDir);

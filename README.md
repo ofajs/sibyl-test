@@ -245,6 +245,7 @@ npm test
 |--------|-------------|---------|
 | `-b, --browsers <browsers>` | Browsers to test (comma-separated) | `webkit,chrome,firefox` |
 | `-p, --port <port>` | Test server port | `30028` |
+| `-f, --file <path>` | Test single `.sb.html` file | All files |
 | `--generate-only` | Generate test files only | `false` |
 | `--run-only` | Run tests only | `false` |
 | `--install` | Install browser dependencies | `false` |
@@ -264,6 +265,12 @@ sb-test --browsers chrome,firefox
 
 # Install browser dependencies and run tests
 sb-test --install
+
+# Test only a single file
+sb-test -f test/foo.sb.html
+
+# Test a single file, using only Firefox
+sb-test -f test/foo.sb.html -b firefox
 
 # Generate test files only
 sb-test --generate-only
@@ -407,7 +414,7 @@ Sibyl Test's CLI optimizes the process by packaging test cases into an HTML file
 
 ### How to use ES Modules in tests?
 
-You can use `import` directly within `<script type="module">` tags.
+You can use `import` directly within `<script type="module">` tags. Note that namespace imports like `import * as` are not currently supported.
 
 ### How to test async operations?
 
