@@ -157,6 +157,9 @@ async function runPlaywrightTests(browserConfig, testUrl, rootDir) {
 
   let context;
   try {
+    // 清理本地可能残留的持久化数据，避免 WebKit 等浏览器复用旧缓存
+    deleteDir(dataDir);
+
     context = await launcher.launchPersistentContext(dataDir, {
       headless: false,
     });
@@ -289,6 +292,7 @@ export async function runTests(options = {}) {
   const server = createServer({
     root: rootDir,
     cors: true,
+    cache: -1,
   });
 
   await new Promise((resolve) => {
