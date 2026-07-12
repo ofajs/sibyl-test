@@ -143,6 +143,75 @@ function printTestResults(name, result, stats) {
   }
 }
 
+async function clearBrowserStorage(page) {
+  // 在同源页面下清理所有 Web 存储 API（非隐身语义，仅重置状态）
+  await page.evaluate(async () => {
+    try {
+      localStorage.clear();
+    } catch (e) {}
+    try {
+      sessionStorage.clear();
+    } catch (e) {}
+
+    // Cache API（Service Worker 使用的缓存）
+    if (self.caches) {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      } catch (e) {}
+    }
+
+    // IndexedDB
+    if (self.indexedDB) {
+      try {
+        if (indexedDB.databases) {
+          const dbs = await indexedDB.databases();
+          await Promise.all(
+            dbs.map(
+              (db) =>
+                new Promise((resolve) => {
+                  if (!db.name) return resolve();
+                  const req = indexedDB.deleteDatabase(db.name);
+                  req.onsuccess = req.onerror = req.onblocked = () => resolve();
+                }),
+            ),
+          );
+        }
+      } catch (e) {}
+    }
+
+    // Service Worker 注册
+    if (navigator.serviceWorker) {
+      try {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      } catch (e) {}
+    }
+
+    // OPFS（Origin Private File System）
+    if (navigator.storage && navigator.storage.getDirectory) {
+      try {
+        const root = await navigator.storage.getDirectory();
+        // 优先使用较新的 remove() 方法一次性清空
+        if (typeof root.remove === "function") {
+          try {
+            await root.remove({ recursive: true });
+          } catch (e) {
+            // 部分实现不允许对根目录调用 remove，退回到逐项删除
+          }
+        }
+        if (typeof root.entries === "function") {
+          for await (const [entryName] of root.entries()) {
+            try {
+              await root.removeEntry(entryName, { recursive: true });
+            } catch (e) {}
+          }
+        }
+      } catch (e) {}
+    }
+  });
+}
+
 async function runPlaywrightTests(browserConfig, testUrl, rootDir) {
   const { name, launcher } = browserConfig;
   const dataDir = path.join(rootDir, `.${name}-test-data`);
@@ -165,6 +234,14 @@ async function runPlaywrightTests(browserConfig, testUrl, rootDir) {
     });
 
     const page = context.pages()[0] || (await context.newPage());
+
+    // 先访问同源页面，然后清空所有存储（含 OPFS/IDB/Cache/SW），再 reload 触发干净的初始化
+    console.log(
+      `${colors.yellow}Clearing storage before test...${colors.reset}`,
+    );
+    await page.goto(testUrl, { waitUntil: "domcontentloaded" });
+    await clearBrowserStorage(page);
+    await context.clearCookies();
 
     console.log(`Opening: ${colors.blue}${testUrl}${colors.reset}`);
     await page.goto(testUrl);
@@ -293,6 +370,11 @@ export async function runTests(options = {}) {
     root: rootDir,
     cors: true,
     cache: -1,
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
   });
 
   await new Promise((resolve) => {
