@@ -356,12 +356,12 @@ async function clearBrowserStorage(page) {
     }
 
     // Service Worker 注册（暂时注释，避免影响测试环境）
-    // if (navigator.serviceWorker) {
-    //   try {
-    //     const regs = await navigator.serviceWorker.getRegistrations();
-    //     await Promise.all(regs.map((r) => r.unregister()));
-    //   } catch (e) {}
-    // }
+    if (navigator.serviceWorker) {
+      try {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      } catch (e) {}
+    }
 
     // OPFS（Origin Private File System）
     if (navigator.storage && navigator.storage.getDirectory) {
