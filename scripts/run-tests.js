@@ -30,7 +30,7 @@ function deleteDir(dirPath) {
   }
 }
 
-async function waitForTestResults(page, evaluateFn) {
+async function waitForTestResults(page, evaluateFn, onTick = null) {
   let result = null;
   const maxWaitTime = 5 * 60 * 1000;
   const startTime = Date.now();
@@ -50,6 +50,14 @@ async function waitForTestResults(page, evaluateFn) {
       }
       return false;
     });
+
+    if (onTick) {
+      try {
+        await onTick(page, evaluateFn);
+      } catch (e) {
+        // 进度报告失败不应中断测试
+      }
+    }
 
     if (isFinished) {
       result = isFinished.hasError ? "failed" : "passed";
@@ -93,6 +101,173 @@ async function getTestStats(page, evaluateFn) {
 
     return { total, success, error, failedTests };
   });
+}
+
+class TerminalStatus {
+  constructor() {
+    this.status = "";
+  }
+
+  stripAnsi(text) {
+    return text.replace(/\x1b\[[0-9;]*m/g, "");
+  }
+
+  update(text) {
+    const plainStatus = this.status ? this.stripAnsi(this.status) : "";
+    const plainText = this.stripAnsi(text);
+    if (this.status) {
+      process.stdout.write(
+        `\r${" ".repeat(plainStatus.length)}\r${text}`,
+      );
+    } else {
+      process.stdout.write(text);
+    }
+    this.status = text;
+  }
+
+  clear() {
+    if (this.status) {
+      const plainStatus = this.stripAnsi(this.status);
+      process.stdout.write(`\r${" ".repeat(plainStatus.length)}\r`);
+      this.status = "";
+    }
+  }
+
+  log(text) {
+    this.clear();
+    console.log(text);
+  }
+}
+
+function createProgressReporter(terminal) {
+  let lastSummary = "";
+  const lastIframeSummaries = new Map();
+  const seenFailures = new Set();
+
+  return async function reportProgress(page, evaluateFn) {
+    const progress = await evaluateFn(page, () => {
+      const suite = document.querySelector("sb-test-suite");
+      if (!suite) return null;
+
+      const iframes = [];
+      suite.iframes.forEach((data, url) => {
+        iframes.push({
+          url,
+          total: data.total || 0,
+          success: data.success || 0,
+          error: data.error || 0,
+          finished: data.results.length === data.total,
+          results: data.results.map((r) => ({
+            name: r.name || "Unknown",
+            success: !!r.success,
+            message:
+              r.result &&
+              typeof r.result === "object" &&
+              r.result.message
+                ? r.result.message
+                : null,
+            content:
+              r.result &&
+              typeof r.result === "object" &&
+              r.result.content != null
+                ? String(r.result.content)
+                : null,
+            stack:
+              r.result &&
+              typeof r.result === "object" &&
+              r.result.stack
+                ? r.result.stack
+                : null,
+          })),
+        });
+      });
+
+      return {
+        total: suite.totalTests || 0,
+        success: suite.successTests || 0,
+        error: suite.errorTests || 0,
+        currentUrl: suite.currentUrl,
+        iframes,
+      };
+    });
+
+    if (!progress) return;
+
+    const summary =
+      `[Progress] ${progress.success + progress.error}/${progress.total} total | ` +
+      `success: ${progress.success} | error: ${progress.error}`;
+    if (summary !== lastSummary) {
+      lastSummary = summary;
+    }
+
+    for (const iframe of progress.iframes) {
+      const pathname = new URL(iframe.url).pathname;
+      const iframeSummary =
+        `${pathname}: ${iframe.success + iframe.error}/${iframe.total} ` +
+        `(success: ${iframe.success}, error: ${iframe.error})`;
+
+      if (lastIframeSummaries.get(iframe.url) !== iframeSummary) {
+        const statusIcon = iframe.finished
+          ? iframe.error > 0
+            ? "✗"
+            : "✓"
+          : "⟳";
+        const statusColor = iframe.finished
+          ? iframe.error > 0
+            ? colors.red
+            : colors.green
+          : colors.yellow;
+        terminal.log(
+          `  ${statusColor}${statusIcon}${colors.reset} ${iframeSummary}`,
+        );
+        lastIframeSummaries.set(iframe.url, iframeSummary);
+      }
+
+      for (const r of iframe.results) {
+        if (!r.success) {
+          const key = `${iframe.url}::${r.name}`;
+          if (!seenFailures.has(key)) {
+            seenFailures.add(key);
+            const lines = [
+              `\n${colors.red}${colors.bright}✗ NEW FAILURE${colors.reset} ${colors.blue}${pathname}${colors.reset}`,
+              `   ${colors.cyan}Name:${colors.reset} ${colors.yellow}${r.name}${colors.reset}`,
+            ];
+            if (r.message) {
+              lines.push(
+                `   ${colors.cyan}Error:${colors.reset} ${colors.red}${r.message}${colors.reset}`,
+              );
+            }
+            if (r.content) {
+              lines.push(
+                `   ${colors.cyan}Content:${colors.reset}\n${colors.yellow}${r.content}${colors.reset}`,
+              );
+            }
+            if (r.stack) {
+              lines.push(
+                `   ${colors.cyan}Stack:${colors.reset}\n${colors.dim}${r.stack}${colors.reset}`,
+              );
+            }
+            terminal.log(lines.join("\n"));
+          }
+        }
+      }
+    }
+
+    let runningPart = "";
+    if (progress.currentUrl) {
+      const current = progress.iframes.find(
+        (i) => i.url === progress.currentUrl,
+      );
+      if (current) {
+        runningPart =
+          `${colors.yellow}running:${colors.reset} ${new URL(current.url).pathname} ` +
+          `(${current.success + current.error}/${current.total})`;
+      }
+    }
+
+    const statusLine = [summary, runningPart].filter(Boolean).join(" | ");
+    terminal.update(statusLine);
+  };
 }
 
 function printSeparator(char = "=", color = colors.dim) {
@@ -225,6 +400,7 @@ async function runPlaywrightTests(browserConfig, testUrl, rootDir) {
   console.log("");
 
   let context;
+  const terminal = new TerminalStatus();
   try {
     // 清理本地可能残留的持久化数据，避免 WebKit 等浏览器复用旧缓存
     deleteDir(dataDir);
@@ -250,7 +426,13 @@ async function runPlaywrightTests(browserConfig, testUrl, rootDir) {
       `${colors.yellow}Waiting for tests to complete...${colors.reset}`,
     );
 
-    const result = await waitForTestResults(page, (p, fn) => p.evaluate(fn));
+    const result = await waitForTestResults(
+      page,
+      (p, fn) => p.evaluate(fn),
+      createProgressReporter(terminal),
+    );
+
+    terminal.clear();
 
     if (!result) {
       console.log(
@@ -287,6 +469,7 @@ async function runSeleniumFirefoxTests(testUrl, rootDir) {
   console.log("");
 
   let driver;
+  const terminal = new TerminalStatus();
   try {
     const options = new seleniumFirefox.Options();
     driver = await new Builder()
@@ -301,9 +484,13 @@ async function runSeleniumFirefoxTests(testUrl, rootDir) {
       `${colors.yellow}Waiting for tests to complete...${colors.reset}`,
     );
 
-    const result = await waitForTestResults(driver, (d, fn) =>
-      d.executeScript(`return (${fn.toString()})();`),
+    const result = await waitForTestResults(
+      driver,
+      (d, fn) => d.executeScript(`return (${fn.toString()})();`),
+      createProgressReporter(terminal),
     );
+
+    terminal.clear();
 
     if (!result) {
       console.log(
