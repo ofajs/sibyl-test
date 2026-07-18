@@ -106,6 +106,8 @@ async function getTestStats(page, evaluateFn) {
 class TerminalStatus {
   constructor() {
     this.status = "";
+    this.isTTY = Boolean(process.stdout.isTTY);
+    this.lastLoggedPlain = "";
   }
 
   stripAnsi(text) {
@@ -113,20 +115,28 @@ class TerminalStatus {
   }
 
   update(text) {
-    const plainStatus = this.status ? this.stripAnsi(this.status) : "";
-    const plainText = this.stripAnsi(text);
-    if (this.status) {
-      process.stdout.write(
-        `\r${" ".repeat(plainStatus.length)}\r${text}`,
-      );
+    if (this.isTTY) {
+      const plainStatus = this.status ? this.stripAnsi(this.status) : "";
+      if (this.status) {
+        process.stdout.write(
+          `\r${" ".repeat(plainStatus.length)}\r${text}`,
+        );
+      } else {
+        process.stdout.write(text);
+      }
+      this.status = text;
     } else {
-      process.stdout.write(text);
+      // 非 TTY（如 CI）：\r 无效，避免刷屏；仅在状态实际变化时打印一行
+      const plain = this.stripAnsi(text);
+      if (plain && plain !== this.lastLoggedPlain) {
+        process.stdout.write(`${text}\n`);
+        this.lastLoggedPlain = plain;
+      }
     }
-    this.status = text;
   }
 
   clear() {
-    if (this.status) {
+    if (this.isTTY && this.status) {
       const plainStatus = this.stripAnsi(this.status);
       process.stdout.write(`\r${" ".repeat(plainStatus.length)}\r`);
       this.status = "";
