@@ -263,16 +263,23 @@ function createProgressReporter(terminal) {
       }
     }
 
+    // 并发模式下可能有多个 iframe 同时运行，全部展示
+    const runningIframes = progress.iframes.filter((i) => !i.finished);
     let runningPart = "";
-    if (progress.currentUrl) {
-      const current = progress.iframes.find(
-        (i) => i.url === progress.currentUrl,
-      );
-      if (current) {
-        runningPart =
-          `${colors.yellow}running:${colors.reset} ${new URL(current.url).pathname} ` +
-          `(${current.success + current.error}/${current.total})`;
-      }
+    if (runningIframes.length === 1) {
+      const current = runningIframes[0];
+      runningPart =
+        `${colors.yellow}running:${colors.reset} ${new URL(current.url).pathname} ` +
+        `(${current.success + current.error}/${current.total})`;
+    } else if (runningIframes.length > 1) {
+      const parts = runningIframes
+        .map(
+          (i) =>
+            `${new URL(i.url).pathname} (${i.success + i.error}/${i.total})`,
+        )
+        .join(", ");
+      runningPart =
+        `${colors.yellow}running(${runningIframes.length}):${colors.reset} ${parts}`;
     }
 
     const statusLine = [summary, runningPart].filter(Boolean).join(" | ");

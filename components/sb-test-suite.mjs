@@ -16,6 +16,10 @@ export default class SbTestSuite extends HTMLElement {
     this.iframes = new Map();
     this.expandedGroups = new Set();
     this.pendingUrls = [];
+    this.runningUrls = new Set();
+    // 并发度：同时最多运行的 iframe 数量，由 parallel 属性控制（默认 1，保持原串行行为）
+    this.parallel = 1;
+    // 兼容字段：指向最近启动的 url，外部进度报告仍可读取
     this.currentUrl = null;
     this.templateReady = false;
     this.preFetchCounts = new Map();
@@ -49,6 +53,11 @@ export default class SbTestSuite extends HTMLElement {
   async connectedCallback() {
     window.addEventListener("message", this.handleMessage);
 
+    // 读取并发度配置：<sb-test-suite parallel="2">
+    const parallelAttr = this.getAttribute("parallel");
+    const parsed = parseInt(parallelAttr, 10);
+    this.parallel = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+
     const includes = this.querySelectorAll("include");
     this.pendingUrls = Array.from(includes)
       .map((inc) => inc.getAttribute("src"))
@@ -63,34 +72,52 @@ export default class SbTestSuite extends HTMLElement {
     await this.preFetchTestCounts(this.pendingUrls.slice());
     
     this.render();
-    this.runNextIframe();
+    this.startNext();
   }
 
-  runNextIframe() {
-    if (this.pendingUrls.length === 0) return;
+  // 按并发度启动 iframe：只要还有待跑 url 且运行中的数量小于并发度，就继续启动
+  startNext() {
+    while (
+      this.pendingUrls.length > 0 &&
+      this.runningUrls.size < this.parallel
+    ) {
+      const absoluteUrl = this.pendingUrls.shift();
+      this.runningUrls.add(absoluteUrl);
+      this.currentUrl = absoluteUrl;
 
-    const absoluteUrl = this.pendingUrls.shift();
-    this.currentUrl = absoluteUrl;
+      const iframe = document.createElement("iframe");
+      iframe.src = absoluteUrl;
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      iframe.style.position = "absolute";
+      iframe.style.visibility = "hidden";
+      this.shadowRoot.appendChild(iframe);
 
-    const iframe = document.createElement("iframe");
-    iframe.src = absoluteUrl;
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "none";
-    iframe.style.position = "absolute";
-    iframe.style.visibility = "hidden";
-    this.shadowRoot.appendChild(iframe);
-
-    const preFetchedTotal = this.preFetchCounts.get(absoluteUrl) || 0;
-    this.iframes.set(absoluteUrl, {
-      iframe,
-      total: preFetchedTotal,
-      success: 0,
-      error: 0,
-      results: [],
-    });
+      const preFetchedTotal = this.preFetchCounts.get(absoluteUrl) || 0;
+      this.iframes.set(absoluteUrl, {
+        iframe,
+        total: preFetchedTotal,
+        success: 0,
+        error: 0,
+        results: [],
+      });
+    }
 
     this.render();
+  }
+
+  // 检查某个 iframe 是否已收集到全部结果，若完成则清理并补充下一个
+  checkIframeComplete(url) {
+    const iframeData = this.iframes.get(url);
+    if (!iframeData) return;
+    if (!this.runningUrls.has(url)) return; // 已被清理过，避免重复触发
+
+    if (iframeData.results.length === iframeData.total) {
+      this.removeIframe(url);
+      this.runningUrls.delete(url);
+      this.startNext();
+    }
   }
 
   disconnectedCallback() {
@@ -125,14 +152,7 @@ export default class SbTestSuite extends HTMLElement {
           iframeData.total = data.count;
         }
         this.render();
-
-        if (
-          url === this.currentUrl &&
-          iframeData.results.length === data.count
-        ) {
-          this.removeIframe(url);
-          this.runNextIframe();
-        }
+        this.checkIframeComplete(url);
       }
     } else if (data.type === "sb-test-result") {
       const url = data.url;
@@ -145,14 +165,7 @@ export default class SbTestSuite extends HTMLElement {
         }
         iframeData.results.push(data);
         this.updateCounts();
-
-        if (
-          url === this.currentUrl &&
-          iframeData.results.length === iframeData.total
-        ) {
-          this.removeIframe(url);
-          this.runNextIframe();
-        }
+        this.checkIframeComplete(url);
       }
     }
   }
@@ -265,7 +278,7 @@ export default class SbTestSuite extends HTMLElement {
           statusClass = data.error > 0 ? "failure" : "success";
         } else if (data.error > 0) {
           statusClass = "failure";
-        } else if (url === this.currentUrl) {
+        } else if (this.runningUrls.has(url)) {
           statusClass = "running";
         }
 
