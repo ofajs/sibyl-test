@@ -65,6 +65,7 @@ const helpEn = `
 Examples:
   $ sb-test                        Run all tests with default browsers
   $ sb-test -b webkit,chrome       Test only on WebKit and Chrome
+  $ sb-test -c 2                   Run 2 test cases in parallel
   $ sb-test -f test/foo.sb.html    Test a single file
   $ sb-test -f test/foo.sb.html -b firefox   Test single file with Firefox only
   $ sb-test --install              Install browser dependencies
@@ -81,6 +82,7 @@ const helpZh = `
 示例：
   $ sb-test                        使用默认浏览器运行所有测试
   $ sb-test -b webkit,chrome       仅在 WebKit 和 Chrome 中测试
+  $ sb-test -c 2                   并发运行 2 个测试用例
   $ sb-test -f test/foo.sb.html    测试单个文件
   $ sb-test -f test/foo.sb.html -b firefox  测试单个文件，仅使用 Firefox
   $ sb-test --install              安装浏览器依赖
@@ -97,6 +99,7 @@ const helpJa = `
 例：
   $ sb-test                        デフォルトブラウザですべてのテストを実行
   $ sb-test -b webkit,chrome       WebKit と Chrome のみでテスト
+  $ sb-test -c 2                   2つのテストケースを並列実行
   $ sb-test -f test/foo.sb.html    単一ファイルをテスト
   $ sb-test -f test/foo.sb.html -b firefox  単一ファイルを Firefox のみでテスト
   $ sb-test --install              ブラウザ依存関係をインストール
@@ -146,6 +149,7 @@ async function main() {
       .version(pkg.version)
       .option("-b, --browsers <browsers>", "指定测试浏览器，多个用逗号分隔 (webkit,chrome,firefox)", "webkit,chrome,firefox")
       .option("-p, --port <port>", "测试服务器端口", "30028")
+      .option("-c, --concurrency <n>", "测试用例并发数：test-all.html 中同时运行的 iframe 数量（>1 时并行）", "1")
       .option("--generate-only", "仅生成 test-all.html，不运行测试", false)
       .option("--run-only", "仅运行测试，跳过生成 test-all.html", false)
       .option("--install", "运行测试前安装浏览器依赖", false)
@@ -160,6 +164,7 @@ async function main() {
       .version(pkg.version)
       .option("-b, --browsers <browsers>", "テストするブラウザをカンマ区切りで指定 (webkit,chrome,firefox)", "webkit,chrome,firefox")
       .option("-p, --port <port>", "テストサーバーのポート", "30028")
+      .option("-c, --concurrency <n>", "テストケースの並列数：test-all.html 内で同時に実行する iframe 数（>1 で並列）", "1")
       .option("--generate-only", "test-all.html のみを生成（テストは実行しない）", false)
       .option("--run-only", "生成をスキップしてテストのみ実行", false)
       .option("--install", "テスト実行前にブラウザ依存関係をインストール", false)
@@ -174,6 +179,7 @@ async function main() {
       .version(pkg.version)
       .option("-b, --browsers <browsers>", "Comma-separated list of browsers to test (webkit,chrome,firefox)", "webkit,chrome,firefox")
       .option("-p, --port <port>", "Port for the test server", "30028")
+      .option("-c, --concurrency <n>", "Number of test cases to run in parallel (iframes in test-all.html, >1 for concurrent)", "1")
       .option("--generate-only", "Only generate test-all.html without running tests", false)
       .option("--run-only", "Only run tests without generating test-all.html", false)
       .option("--install", "Install browser dependencies before running tests", false)
@@ -186,6 +192,7 @@ async function main() {
   const options = program.opts();
   const browsers = options.browsers.split(",").map(b => b.trim());
   const port = parseInt(options.port);
+  const concurrency = Math.max(1, parseInt(options.concurrency) || 1);
   const rootDir = process.cwd();
 
   if (options.install) {
@@ -201,14 +208,14 @@ async function main() {
   if (!options.runOnly) {
     if (options.file) {
       console.log(`\n📝 Generating test-all.html for single file: ${options.file}...`);
-      const result = generateSingleTestHtml(rootDir, options.file);
+      const result = generateSingleTestHtml(rootDir, options.file, { parallel: concurrency });
 
       if (result.fileCount === 0) {
         process.exit(1);
       }
     } else {
       console.log("\n📝 Generating test-all.html...");
-      const result = generateTestHtml(rootDir);
+      const result = generateTestHtml(rootDir, { parallel: concurrency });
 
       if (result.fileCount === 0) {
         console.log("No .sb.html files found in the project.");
