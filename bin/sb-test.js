@@ -5,11 +5,16 @@ import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
 import { createRequire } from "module";
-import { generateTestHtml, generateSingleTestHtml } from "../scripts/generate-test-html.js";
+import { generateTestHtml, generateFilesHtml } from "../scripts/generate-test-html.js";
 import { runTests } from "../scripts/run-tests.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json");
+
+// 收集 -f 指定的文件：支持 variadic（空格分隔）、逗号分隔、重复 -f
+function collectFiles(value, previous) {
+  return previous.concat(value.split(",").map(v => v.trim()).filter(Boolean));
+}
 
 async function installDependencies() {
   console.log("Installing Playwright browsers...");
@@ -66,8 +71,9 @@ Examples:
   $ sb-test                        Run all tests with default browsers
   $ sb-test -b webkit,chrome       Test only on WebKit and Chrome
   $ sb-test -c 2                   Run 2 test cases in parallel
-  $ sb-test -f test/foo.sb.html    Test a single file
-  $ sb-test -f test/foo.sb.html -b firefox   Test single file with Firefox only
+  $ sb-test -f test/foo.sb.html    Test specific file(s)
+  $ sb-test -f test/a-sb.html test/b-sb.html   Test multiple files
+  $ sb-test -f test/foo.sb.html -b firefox   Test specific file with Firefox only
   $ sb-test --install              Install browser dependencies
   $ sb-test --generate-only        Only generate test-all.html
   $ sb-test --run-only             Only run tests (skip generation)
@@ -83,8 +89,9 @@ const helpZh = `
   $ sb-test                        使用默认浏览器运行所有测试
   $ sb-test -b webkit,chrome       仅在 WebKit 和 Chrome 中测试
   $ sb-test -c 2                   并发运行 2 个测试用例
-  $ sb-test -f test/foo.sb.html    测试单个文件
-  $ sb-test -f test/foo.sb.html -b firefox  测试单个文件，仅使用 Firefox
+  $ sb-test -f test/foo.sb.html    测试指定文件
+  $ sb-test -f test/a-sb.html test/b-sb.html    测试多个文件
+  $ sb-test -f test/foo.sb.html -b firefox  测试指定文件，仅使用 Firefox
   $ sb-test --install              安装浏览器依赖
   $ sb-test --generate-only        仅生成 test-all.html，不运行测试
   $ sb-test --run-only             仅运行测试，跳过生成阶段
@@ -100,8 +107,9 @@ const helpJa = `
   $ sb-test                        デフォルトブラウザですべてのテストを実行
   $ sb-test -b webkit,chrome       WebKit と Chrome のみでテスト
   $ sb-test -c 2                   2つのテストケースを並列実行
-  $ sb-test -f test/foo.sb.html    単一ファイルをテスト
-  $ sb-test -f test/foo.sb.html -b firefox  単一ファイルを Firefox のみでテスト
+  $ sb-test -f test/foo.sb.html    指定ファイルをテスト
+  $ sb-test -f test/a-sb.html test/b-sb.html    複数ファイルをテスト
+  $ sb-test -f test/foo.sb.html -b firefox  指定ファイルを Firefox のみでテスト
   $ sb-test --install              ブラウザ依存関係をインストール
   $ sb-test --generate-only        test-all.html のみを生成（テストは実行しない）
   $ sb-test --run-only             生成をスキップしてテストのみ実行
@@ -154,7 +162,7 @@ async function main() {
       .option("--run-only", "仅运行测试，跳过生成 test-all.html", false)
       .option("--install", "运行测试前安装浏览器依赖", false)
       .option("--keep-test-file", "测试完成后保留 test-all.html", false)
-      .option("-f, --file <path>", "测试单个 .sb.html 文件，而非所有文件")
+      .option("-f, --file <paths...>", "测试指定的 HTML 文件（可多个：空格或逗号分隔，或重复 -f；后缀不限于 .sb.html）", collectFiles, [])
       .addHelpText("after", helpZh)
       .parse(cleanedArgs);
   } else if (lang === 'jp') {
@@ -169,7 +177,7 @@ async function main() {
       .option("--run-only", "生成をスキップしてテストのみ実行", false)
       .option("--install", "テスト実行前にブラウザ依存関係をインストール", false)
       .option("--keep-test-file", "テスト完了後も test-all.html を保持", false)
-      .option("-f, --file <path>", "単一の .sb.html ファイルをテスト")
+      .option("-f, --file <paths...>", "テストする HTML ファイルを指定（複数可：スペース・カンマ区切り、-f の繰り返し；拡張子は .sb.html に限定されない）", collectFiles, [])
       .addHelpText("after", helpJa)
       .parse(cleanedArgs);
   } else {
@@ -184,7 +192,7 @@ async function main() {
       .option("--run-only", "Only run tests without generating test-all.html", false)
       .option("--install", "Install browser dependencies before running tests", false)
       .option("--keep-test-file", "Keep test-all.html after tests complete", false)
-      .option("-f, --file <path>", "Test a single .sb.html file instead of all files")
+      .option("-f, --file <paths...>", "Test specific HTML file(s), multiple allowed (space- or comma-separated, or repeated -f; suffix not limited to .sb.html)", collectFiles, [])
       .addHelpText("after", helpEn)
       .parse(cleanedArgs);
   }
@@ -206,9 +214,10 @@ async function main() {
   }
 
   if (!options.runOnly) {
-    if (options.file) {
-      console.log(`\n📝 Generating test-all.html for single file: ${options.file}...`);
-      const result = generateSingleTestHtml(rootDir, options.file, { parallel: concurrency });
+    const files = options.file || [];
+    if (files.length > 0) {
+      console.log(`\n📝 Generating test-all.html for ${files.length} file(s): ${files.join(", ")}...`);
+      const result = generateFilesHtml(rootDir, files, { parallel: concurrency });
 
       if (result.fileCount === 0) {
         process.exit(1);
