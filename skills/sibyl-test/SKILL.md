@@ -113,8 +113,9 @@ npx sb-test --generate-only
 # 仅运行测试（跳过生成）
 npx sb-test --run-only
 
-# 测试单个文件
+# 测试指定文件（支持多个，后缀不限 .sb.html）
 npx sb-test -f test/foo.sb.html
+npx sb-test -f test/a-sb.html test/b-sb.html
 
 # 安装浏览器依赖
 npx sb-test --install
@@ -126,7 +127,7 @@ npx sb-test --install
 |------|------|--------|
 | `-b, --browsers <browsers>` | 浏览器列表，逗号分隔 | `webkit,chrome,firefox` |
 | `-p, --port <port>` | 本地测试服务器端口 | `30028` |
-| `-f, --file <path>` | 仅测试单个 `.sb.html` 文件 | 全部文件 |
+| `-f, --file <paths...>` | 测试指定的 HTML 文件（可多个：空格或逗号分隔，或重复 `-f`；后缀不限于 `.sb.html`） | 全部文件 |
 | `--generate-only` | 仅生成测试文件 | `false` |
 | `--run-only` | 仅运行测试 | `false` |
 | `--install` | 安装浏览器依赖 | `false` |
