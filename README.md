@@ -245,7 +245,7 @@ npm test
 |--------|-------------|---------|
 | `-b, --browsers <browsers>` | Browsers to test (comma-separated) | `webkit,chrome,firefox` |
 | `-p, --port <port>` | Test server port | `30028` |
-| `-f, --file <path>` | Test single `.sb.html` file | All files |
+| `-f, --file <paths...>` | Test specific HTML file(s), multiple allowed (space- or comma-separated, or repeat `-f`; suffix not limited to `.sb.html`) | All files |
 | `--generate-only` | Generate test files only | `false` |
 | `--run-only` | Run tests only | `false` |
 | `--install` | Install browser dependencies | `false` |
@@ -266,11 +266,16 @@ sb-test --browsers chrome,firefox
 # Install browser dependencies and run tests
 sb-test --install
 
-# Test only a single file
+# Test only a specific file
 sb-test -f test/foo.sb.html
 
-# Test a single file, using only Firefox
-sb-test -f test/foo.sb.html -b firefox
+# Test multiple files (space- or comma-separated, or repeat -f)
+sb-test -f test/foo-sb.html test/bar-sb.html
+sb-test -f "test/foo-sb.html,test/bar-sb.html"
+sb-test -f test/foo-sb.html -f test/bar-sb.html
+
+# Test specific files, using only Firefox
+sb-test -f test/foo-sb.html -b firefox
 
 # Generate test files only
 sb-test --generate-only
@@ -340,6 +345,18 @@ import { generateTestHtml } from 'sibyl-test/scripts/generate-test-html.js';
 
 const result = generateTestHtml('/path/to/project');
 console.log(`Found ${result.fileCount} test files`);
+console.log(`Generated: ${result.outputPath}`);
+```
+
+### generateFilesHtml(rootDir, filePaths, options)
+
+Generates `test-all.html` for explicitly specified HTML file(s) — multiple files supported, and the suffix is not limited to `.sb.html` (only `.html` is required).
+
+```javascript
+import { generateFilesHtml } from 'sibyl-test/scripts/generate-test-html.js';
+
+const result = generateFilesHtml('/path/to/project', ['test/foo.sb.html', 'test/bar-sb.html']);
+console.log(`Included ${result.fileCount} file(s)`);
 console.log(`Generated: ${result.outputPath}`);
 ```
 
@@ -423,6 +440,10 @@ You can test async operations using the `await` keyword in test scripts.
 ### How to skip a test?
 
 You can comment out the entire test tag to skip a test.
+
+### How to run local-only tests that shouldn't run in CI?
+
+Name the file so it doesn't end with `.sb.html` (e.g. `local-sb.html`). The default scan only picks up `.sb.html` files, so `npm test` / CI will skip it. Run it explicitly with `sb-test -f local-sb.html` (multiple files allowed).
 
 ## Contributing
 

@@ -245,7 +245,7 @@ npm test
 |-----------|------|-----------|
 | `-b, --browsers <browsers>` | テストするブラウザ（カンマ区切り） | `webkit,chrome,firefox` |
 | `-p, --port <port>` | テストサーバーのポート | `30028` |
-| `-f, --file <path>` | テストする単一の `.sb.html` ファイル | すべてのファイル |
+| `-f, --file <paths...>` | テストする HTML ファイルを指定（複数可：スペース・カンマ区切り、`-f` の繰り返し；拡張子は `.sb.html` に限定されない） | すべてのファイル |
 | `--generate-only` | テストファイルのみ生成 | `false` |
 | `--run-only` | テストのみ実行 | `false` |
 | `--install` | ブラウザ依存関係をインストール | `false` |
@@ -266,11 +266,16 @@ sb-test --browsers chrome,firefox
 # ブラウザ依存関係をインストールしてテストを実行
 sb-test --install
 
-# 単一ファイルのみテスト
+# 指定ファイルのみテスト
 sb-test -f test/foo.sb.html
 
-# 単一ファイルを Firefox のみでテスト
-sb-test -f test/foo.sb.html -b firefox
+# 複数ファイルをテスト（スペース・カンマ区切り、-f の繰り返しも可）
+sb-test -f test/foo-sb.html test/bar-sb.html
+sb-test -f "test/foo-sb.html,test/bar-sb.html"
+sb-test -f test/foo-sb.html -f test/bar-sb.html
+
+# 指定ファイルを Firefox のみでテスト
+sb-test -f test/foo-sb.html -b firefox
 
 # テストファイルのみ生成
 sb-test --generate-only
@@ -340,6 +345,18 @@ import { generateTestHtml } from 'sibyl-test/scripts/generate-test-html.js';
 
 const result = generateTestHtml('/path/to/project');
 console.log(`Found ${result.fileCount} test files`);
+console.log(`Generated: ${result.outputPath}`);
+```
+
+### generateFilesHtml(rootDir, filePaths, options)
+
+明示的に指定した HTML ファイル用の `test-all.html` を生成します。複数ファイルに対応し、拡張子は `.sb.html` に限定されません（`.html` であれば OK）。
+
+```javascript
+import { generateFilesHtml } from 'sibyl-test/scripts/generate-test-html.js';
+
+const result = generateFilesHtml('/path/to/project', ['test/foo.sb.html', 'test/bar-sb.html']);
+console.log(`Included ${result.fileCount} file(s)`);
 console.log(`Generated: ${result.outputPath}`);
 ```
 

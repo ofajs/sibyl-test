@@ -72,40 +72,55 @@ export function generateTestHtml(rootDir, options = {}) {
   };
 }
 
-export function generateSingleTestHtml(rootDir, filePath, options = {}) {
+export function generateFilesHtml(rootDir, filePaths, options = {}) {
   const { parallel = 1 } = options;
-  const resolvedPath = path.resolve(rootDir, filePath);
-  const relativePath = path.relative(rootDir, resolvedPath);
+  const files = Array.isArray(filePaths) ? filePaths : [filePaths];
   const outputFilePath = path.join(rootDir, "test-all.html");
 
-  if (!fs.existsSync(resolvedPath)) {
-    console.error(`File not found: ${resolvedPath}`);
-    return {
-      fileCount: 0,
-      outputPath: outputFilePath
-    };
+  const relativePaths = [];
+  for (const filePath of files) {
+    const resolvedPath = path.resolve(rootDir, filePath);
+
+    if (!fs.existsSync(resolvedPath)) {
+      console.error(`File not found: ${resolvedPath}`);
+      return {
+        fileCount: 0,
+        outputPath: outputFilePath
+      };
+    }
+
+    // 显式指定的文件只要求 .html 后缀（默认扫描仍只收集 .sb.html）
+    if (!resolvedPath.endsWith(".html")) {
+      console.error(`Not an .html file: ${filePath}`);
+      return {
+        fileCount: 0,
+        outputPath: outputFilePath
+      };
+    }
+
+    const relativePath = path.relative(rootDir, resolvedPath);
+    if (!relativePaths.includes(relativePath)) {
+      relativePaths.push(relativePath);
+    }
   }
 
-  if (!resolvedPath.endsWith(".sb.html")) {
-    console.error(`Not a .sb.html file: ${filePath}`);
-    return {
-      fileCount: 0,
-      outputPath: outputFilePath
-    };
-  }
+  generateAllHtml(relativePaths, outputFilePath, rootDir, parallel);
 
-  generateAllHtml([relativePath], outputFilePath, rootDir, parallel);
-
-  console.log(`Generated single test file: ${relativePath}`);
+  console.log(`Generated test file(s): ${relativePaths.join(", ")}`);
   console.log(`Generated: ${outputFilePath}`);
   if (parallel > 1) {
     console.log(`Parallel: ${parallel} (iframes run concurrently)`);
   }
 
   return {
-    fileCount: 1,
+    fileCount: relativePaths.length,
     outputPath: outputFilePath
   };
+}
+
+// 向后兼容：单文件用法保持原函数签名
+export function generateSingleTestHtml(rootDir, filePath, options = {}) {
+  return generateFilesHtml(rootDir, filePath, options);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

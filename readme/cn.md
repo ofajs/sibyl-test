@@ -241,7 +241,7 @@ npm test
 |------|------|--------|
 | `-b, --browsers <browsers>` | 指定测试浏览器（逗号分隔） | `webkit,chrome,firefox` |
 | `-p, --port <port>` | 测试服务器端口 | `30028` |
-| `-f, --file <path>` | 只测试单个 `.sb.html` 文件 | 所有文件 |
+| `-f, --file <paths...>` | 测试指定的 HTML 文件（可多个：空格或逗号分隔，或重复 `-f`；后缀不限于 `.sb.html`） | 所有文件 |
 | `--generate-only` | 只生成测试文件 | `false` |
 | `--run-only` | 只运行测试 | `false` |
 | `--install` | 安装浏览器依赖 | `false` |
@@ -259,11 +259,16 @@ sb-test --browsers webkit
 # 在 Chrome 和 Firefox 中测试
 sb-test --browsers chrome,firefox
 
-# 只测试单个文件
+# 只测试指定文件
 sb-test -f test/foo.sb.html
 
-# 测试单个文件，仅使用 Firefox
-sb-test -f test/foo.sb.html -b firefox
+# 测试多个文件（空格或逗号分隔，也可重复 -f）
+sb-test -f test/foo-sb.html test/bar-sb.html
+sb-test -f "test/foo-sb.html,test/bar-sb.html"
+sb-test -f test/foo-sb.html -f test/bar-sb.html
+
+# 测试指定文件，仅使用 Firefox
+sb-test -f test/foo-sb.html -b firefox
 
 # 安装浏览器依赖并运行测试
 sb-test --install
@@ -336,6 +341,18 @@ import { generateTestHtml } from 'sibyl-test/scripts/generate-test-html.js';
 
 const result = generateTestHtml('/path/to/project');
 console.log(`Found ${result.fileCount} test files`);
+console.log(`Generated: ${result.outputPath}`);
+```
+
+### generateFilesHtml(rootDir, filePaths, options)
+
+为显式指定的 HTML 文件生成 `test-all.html` —— 支持多个文件，后缀不限于 `.sb.html`（只要求 `.html`）。
+
+```javascript
+import { generateFilesHtml } from 'sibyl-test/scripts/generate-test-html.js';
+
+const result = generateFilesHtml('/path/to/project', ['test/foo.sb.html', 'test/bar-sb.html']);
+console.log(`Included ${result.fileCount} file(s)`);
 console.log(`Generated: ${result.outputPath}`);
 ```
 
@@ -419,6 +436,10 @@ Sibyl Test 的 CLI 经过优化，会先将测试用例封装成一个 HTML 文�
 ### 如何跳过某个测试？
 
 可以注释掉整个测试标签来跳过测试。
+
+### 如何运行不想进 CI 的本地测试？
+
+将文件命名为不以 `.sb.html` 结尾（如 `local-sb.html`），默认扫描只会发现 `.sb.html` 文件，因此 `npm test` / CI 不会执行它；需要时用 `sb-test -f local-sb.html` 显式运行（支持多文件）。
 
 ## 贡献
 
