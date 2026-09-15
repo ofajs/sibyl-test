@@ -194,7 +194,7 @@ Sibyl Test は CDN を通じて HTML で直接使用でき、インストール�
 
 複数のブラウザ（WebKit、Chrome、Firefox）でテストを実行する必要がある場合、このプロセスを自動化するための CLI ツールを提供しています。
 
-このコマンドラインツールはプロジェクト内のすべての `.sb.html` ファイルを自動的にスキャンし、すべてのテストケースを含む `test-all.html` ファイルを生成して、複数のブラウザエンジンでテストを実行します。
+このコマンドラインツールは、プロジェクト内のすべての `.sb.html` ファイルをテストマニフェスト（`test-index.html`）に収集し、複数のブラウザエンジンでテストを実行します。マニフェストはプロジェクトに常駐します：初回実行時に自動生成され、以降は自動同期されます——テストの順序、ファイル単位の並列数、スキップを手動で制御できます（[テストマニフェスト](#テストマニフェスト)セクションを参照）。
 
 ### インストール
 
@@ -211,10 +211,10 @@ npx sb-test
 # ブラウザを指定
 npx sb-test --browsers webkit,chrome
 
-# テストファイルのみ生成
+# テストマニフェストのみ同期
 npx sb-test --generate-only
 
-# テストのみ実行（生成なし）
+# テストのみ実行（マニフェスト同期をスキップ）
 npx sb-test --run-only
 
 # ブラウザ依存関係をインストール
@@ -245,11 +245,12 @@ npm test
 |-----------|------|-----------|
 | `-b, --browsers <browsers>` | テストするブラウザ（カンマ区切り） | `webkit,chrome,firefox` |
 | `-p, --port <port>` | テストサーバーのポート | `30028` |
+| `-c, --concurrency <n>` | テストファイルの並列数（同時に実行する iframe 数） | `1` |
 | `-f, --file <paths...>` | テストする HTML ファイルを指定（複数可：スペース・カンマ区切り、`-f` の繰り返し；拡張子は `.sb.html` に限定されない） | すべてのファイル |
-| `--generate-only` | テストファイルのみ生成 | `false` |
-| `--run-only` | テストのみ実行 | `false` |
+| `--generate-only` | マニフェストのみ同期し、テストは実行しない | `false` |
+| `--run-only` | マニフェスト同期をスキップしてテストのみ実行 | `false` |
+| `--force-regenerate` | 既存のマニフェストを破棄して再生成 | `false` |
 | `--install` | ブラウザ依存関係をインストール | `false` |
-| `--keep-test-file` | 生成されたテストファイルを保持 | `false` |
 
 ### 例
 
@@ -277,9 +278,40 @@ sb-test -f test/foo-sb.html -f test/bar-sb.html
 # 指定ファイルを Firefox のみでテスト
 sb-test -f test/foo-sb.html -b firefox
 
-# テストファイルのみ生成
+# テストマニフェストのみ同期
 sb-test --generate-only
 ```
+
+## テストマニフェスト
+
+通常の実行ごとに、プロジェクトルートに `test-index.html` マニフェストが維持されます。触らなくても動作しますが、自由に手動編集できます：
+
+```html
+<sb-test-suite parallel="4">
+  <!-- include の順序 = 実行順序 -->
+  <include src="./setup.sb.html" exclusive></include>
+  <include src="./core/a.sb.html"></include>
+  <include src="./core/b.sb.html"></include>
+  <include src="./flaky.sb.html" skip></include>
+</sb-test-suite>
+```
+
+実行のたびに、マニフェストは最新のプロジェクトスキャンと同期されます：
+
+- 新しい `.sb.html` ファイルは include リストの**末尾に追加**されます（手動の順序は崩されません）。
+- ファイルが存在しなくなったエントリは**削除**されます。
+- 手動で編集した内容（順序、属性、コメント）はすべて**そのまま保持**されます。
+
+`<include>` の属性：
+
+| 属性 | 効果 |
+|------|------|
+| `skip` | ファイルはマニフェストに残るが実行されない（一時的に無効化する場合など） |
+| `exclusive` | 単独実行：他のファイルが動いていないときのみ開始し、実行中は他のファイルを開始させない——セットアップファイルやクリーンなブラウザ状態が必要なテストに最適 |
+
+`<sb-test-suite>` の `parallel="n"` 属性で同時に実行するファイル数を制御します。CLI の `-c <n>` は明示的に指定した場合のみ上書きし、それ以外は手動の値が優先されます。
+
+> `-f` で一部のファイルを一時的に実行する場合は、一時ファイル `test-run.html` が生成され、編集済みマニフェストには影響しません。実行終了後、一時ファイルは自動削除されます。
 
 ## GitHub Actions 統合
 
@@ -338,19 +370,20 @@ jobs:
 
 ### generateTestHtml(rootDir)
 
-テスト HTML ファイルを生成します。
+テストマニフェスト（`test-index.html`）を同期します：初回実行で生成し、以降は最新のプロジェクトスキャンと同期します（新規ファイルは末尾に追加、削除済みファイルは除去、手動編集は保持）。`{ force: true }` で強制再構築、`{ parallel: 2, parallelExplicit: true }` で suite レベルの並列数を書き込めます。
 
 ```javascript
 import { generateTestHtml } from 'sibyl-test/scripts/generate-test-html.js';
 
 const result = generateTestHtml('/path/to/project');
 console.log(`Found ${result.fileCount} test files`);
-console.log(`Generated: ${result.outputPath}`);
+console.log(`Manifest: ${result.outputPath}`);
+console.log(`Added: ${result.added}, Removed: ${result.removed}`);
 ```
 
 ### generateFilesHtml(rootDir, filePaths, options)
 
-明示的に指定した HTML ファイル用の `test-all.html` を生成します。複数ファイルに対応し、拡張子は `.sb.html` に限定されません（`.html` であれば OK）。
+明示的に指定した HTML ファイル用の一時マニフェスト `test-run.html` を生成します。複数ファイルに対応し、拡張子は `.sb.html` に限定されません（`.html` であれば OK）。常設の `test-index.html` には影響しません。
 
 ```javascript
 import { generateFilesHtml } from 'sibyl-test/scripts/generate-test-html.js';
@@ -370,7 +403,8 @@ import { runTests } from 'sibyl-test/scripts/run-tests.js';
 const result = await runTests({
   browsers: ['webkit', 'chrome'],
   port: 30028,
-  rootDir: '/path/to/project'
+  rootDir: '/path/to/project',
+  testHtml: 'test-index.html' // 開くマニフェスト、デフォルトは test-index.html
 });
 
 if (result.success) {
@@ -382,7 +416,7 @@ if (result.success) {
 
 ## 動作原理
 
-1. **生成フェーズ**：CLI ツールがプロジェクト内のすべての `.sb.html` ファイルをスキャンし、すべてのテストを含む `test-all.html` ファイルを生成します。
+1. **同期フェーズ**：CLI がプロジェクト内のすべての `.sb.html` ファイルをスキャンし、`test-index.html` を同期します（初回は生成、以降は差分同期）。`-f` 実行では代わりに一時マニフェスト `test-run.html` を生成します。
 
 2. **テストフェーズ**：
    - ローカル HTTP サーバーを起動
@@ -390,7 +424,7 @@ if (result.success) {
    - すべてのテストが完了するのを待機
    - テスト結果を収集して表示
 
-3. **クリーンアップフェーズ**：生成された `test-all.html` ファイルを削除（`--no-cleanup` オプションを使用しない場合）
+3. **クリーンアップフェーズ**：`-f` 実行で生成された一時 `test-run.html` を削除します。`test-index.html` は保持され、手動のオーケストレーションは実行間で有効です。
 
 ## サンプルプロジェクト
 

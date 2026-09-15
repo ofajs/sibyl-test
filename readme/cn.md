@@ -190,7 +190,7 @@ Sibyl Test 可以直接通过 CDN 在 HTML 中使用，无需任何安装步骤�
 
 如果你需要在多个浏览器（WebKit、Chrome、Firefox）中运行测试，我们提供了 CLI 工具来自动化这一过程。
 
-该命令行工具会自动搜索项目中的所有 `.sb.html` 文件，生成一个包含全部测试用例的 `test-all.html` 文件，并在多种浏览器内核中运行这些测试。
+该命令行工具会把项目中的所有 `.sb.html` 文件收集到一份测试清单（`test-index.html`）中，并在多种浏览器内核中运行这些测试。清单会常驻项目：首次运行自动生成，之后自动“查漏补缺”式同步——你可以手动控制测试顺序、按文件并发和跳过某些文件（见[测试清单](#测试清单)章节）。
 
 ### 安装
 
@@ -207,10 +207,10 @@ npx sb-test
 # 指定浏览器
 npx sb-test --browsers webkit,chrome
 
-# 只生成测试文件
+# 只同步测试清单
 npx sb-test --generate-only
 
-# 只运行测试（不生成）
+# 只运行测试（跳过清单同步）
 npx sb-test --run-only
 
 # 安装浏览器依赖
@@ -241,11 +241,12 @@ npm test
 |------|------|--------|
 | `-b, --browsers <browsers>` | 指定测试浏览器（逗号分隔） | `webkit,chrome,firefox` |
 | `-p, --port <port>` | 测试服务器端口 | `30028` |
+| `-c, --concurrency <n>` | 测试文件并发数（同时运行的 iframe 数量） | `1` |
 | `-f, --file <paths...>` | 测试指定的 HTML 文件（可多个：空格或逗号分隔，或重复 `-f`；后缀不限于 `.sb.html`） | 所有文件 |
-| `--generate-only` | 只生成测试文件 | `false` |
-| `--run-only` | 只运行测试 | `false` |
+| `--generate-only` | 只同步测试清单，不运行测试 | `false` |
+| `--run-only` | 只运行测试，跳过清单同步 | `false` |
+| `--force-regenerate` | 丢弃现有清单，重新扫描生成 | `false` |
 | `--install` | 安装浏览器依赖 | `false` |
-| `--keep-test-file` | 保留生成的测试文件 | `false` |
 
 ### 示例
 
@@ -273,9 +274,40 @@ sb-test -f test/foo-sb.html -b firefox
 # 安装浏览器依赖并运行测试
 sb-test --install
 
-# 只生成测试文件
+# 只同步测试清单
 sb-test --generate-only
 ```
+
+## 测试清单
+
+每次常规运行都会在项目根目录维护一份 `test-index.html` 清单。你完全可以不管它，但也可以随意手动编辑：
+
+```html
+<sb-test-suite parallel="4">
+  <!-- include 顺序 = 执行顺序 -->
+  <include src="./setup.sb.html" exclusive></include>
+  <include src="./core/a.sb.html"></include>
+  <include src="./core/b.sb.html"></include>
+  <include src="./flaky.sb.html" skip></include>
+</sb-test-suite>
+```
+
+每次运行时清单会与项目的最新扫描结果同步：
+
+- 新增的 `.sb.html` 文件会**追加到 include 列表末尾**（不会打乱你手动排的顺序）。
+- 指向已删除文件的条目会被**移除**。
+- 你手动修改的一切——顺序、属性、注释——都会**原样保留**。
+
+`<include>` 支持的属性：
+
+| 属性 | 作用 |
+|------|------|
+| `skip` | 文件保留在清单中但不执行（适合临时停用） |
+| `exclusive` | 独占运行：等其他文件全部跑完才启动，它运行期间其他文件也不能启动——适合 setup 文件或需要干净浏览器状态的测试 |
+
+`<sb-test-suite>` 上的 `parallel="n"` 属性控制同时并发运行的文件数。命令行 `-c <n>` 只在显式传入时才会覆盖它，否则以你手动配置的值为准。
+
+> 用 `-f` 临时运行部分文件时会写入临时的 `test-run.html`，不会碰你编排好的清单；运行结束后临时文件自动删除。
 
 ## GitHub Actions 集成
 
@@ -334,19 +366,20 @@ jobs:
 
 ### generateTestHtml(rootDir)
 
-生成测试 HTML 文件。
+同步测试清单（`test-index.html`）：首次运行生成，之后与项目最新扫描结果做“查漏补缺”式同步（新文件追加、失效文件移除、手动编辑保留）。传 `{ force: true }` 可强制重建，传 `{ parallel: 2, parallelExplicit: true }` 可写入 suite 级并发数。
 
 ```javascript
 import { generateTestHtml } from 'sibyl-test/scripts/generate-test-html.js';
 
 const result = generateTestHtml('/path/to/project');
 console.log(`Found ${result.fileCount} test files`);
-console.log(`Generated: ${result.outputPath}`);
+console.log(`Manifest: ${result.outputPath}`);
+console.log(`Added: ${result.added}, Removed: ${result.removed}`);
 ```
 
 ### generateFilesHtml(rootDir, filePaths, options)
 
-为显式指定的 HTML 文件生成 `test-all.html` —— 支持多个文件，后缀不限于 `.sb.html`（只要求 `.html`）。
+为显式指定的 HTML 文件生成临时清单 `test-run.html` —— 支持多个文件，后缀不限于 `.sb.html`（只要求 `.html`）。不会改动常驻的 `test-index.html`。
 
 ```javascript
 import { generateFilesHtml } from 'sibyl-test/scripts/generate-test-html.js';
@@ -366,7 +399,8 @@ import { runTests } from 'sibyl-test/scripts/run-tests.js';
 const result = await runTests({
   browsers: ['webkit', 'chrome'],
   port: 30028,
-  rootDir: '/path/to/project'
+  rootDir: '/path/to/project',
+  testHtml: 'test-index.html' // 要打开的清单，默认 test-index.html
 });
 
 if (result.success) {
@@ -378,7 +412,7 @@ if (result.success) {
 
 ## 工作原理
 
-1. **生成阶段**：CLI 工具扫描项目中的所有 `.sb.html` 文件，生成一个包含所有测试的 `test-all.html` 文件。
+1. **同步阶段**：CLI 扫描项目中的所有 `.sb.html` 文件并同步 `test-index.html`（首次生成，之后查漏补缺）。`-f` 模式改为生成临时清单 `test-run.html`。
 
 2. **测试阶段**：
    - 启动本地 HTTP 服务器
@@ -386,7 +420,7 @@ if (result.success) {
    - 等待所有测试完成
    - 收集并显示测试结果
 
-3. **清理阶段**：删除生成的 `test-all.html` 文件（除非使用 `--no-cleanup` 选项）
+3. **清理阶段**：删除 `-f` 模式产生的临时 `test-run.html`。`test-index.html` 会保留，手动编排跨运行生效。
 
 ## 示例项目
 
