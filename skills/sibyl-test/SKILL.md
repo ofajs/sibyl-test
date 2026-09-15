@@ -23,7 +23,7 @@ Sibyl Test 是一个轻量、零依赖的浏览器测试框架，基于 Web Comp
 **属性**
 
 - `name`（必填）：测试名称
-- `parallel`（可选）：是否并行执行
+- `parallel`（可选）：该用例立即并发执行（不进串行队列），适合互相独立的纯计算/异步用例；不加则与其他未标记的用例依次串行执行
 
 **用法示例**
 
@@ -78,17 +78,46 @@ Sibyl Test 是一个轻量、零依赖的浏览器测试框架，基于 Web Comp
 ```html
 <script type="module" src="https://cdn.jsdelivr.net/gh/ofajs/sibyl-test/components/sb-test-suite.mjs"></script>
 
-<sb-test-suite>
+<sb-test-suite parallel="2">
   <include src="./test1.sb.html"></include>
   <include src="./test2.sb.html"></include>
 </sb-test-suite>
 ```
 
+**属性与并发控制**
+
+- `<sb-test-suite parallel="n">`：同时并发运行 n 个文件（iframe），默认 1（串行）
+- `<include>` 属性：
+  - `skip`：文件保留在清单中但不执行
+  - `exclusive`：独占运行——等其他文件全部跑完才启动，运行期间其他文件不能启动（适合 setup 或需要干净浏览器状态的测试）
+- include 的书写顺序 = 执行顺序
+
 ## 文件约定
 
 - 单个测试文件建议使用 `.sb.html` 扩展名
 - 文件可单独在静态服务器打开查看结果
-- 多个 `.sb.html` 文件会被 CLI 聚合并生成 `test-all.html`
+- CLI 将所有 `.sb.html` 收集到项目根目录的测试清单 `test-index.html` 中运行
+
+## 测试清单（test-index.html）
+
+清单首次运行自动生成，之后每次运行自动“查漏补缺”式同步：
+
+- 新增的 `.sb.html` 追加到 include 列表末尾（不打乱手动顺序）
+- 已删除文件的条目自动移除
+- 手动编辑（顺序、skip、exclusive、parallel、注释）全部保留
+
+可以手动编辑清单控制执行编排：
+
+```html
+<sb-test-suite parallel="4">
+  <include src="./setup.sb.html" exclusive></include>
+  <include src="./core/a.sb.html"></include>
+  <include src="./core/b.sb.html"></include>
+  <include src="./flaky.sb.html" skip></include>
+</sb-test-suite>
+```
+
+CLI 的 `-c <n>` 只在显式传入时才覆盖 suite 的 `parallel` 属性；`-f` 临时运行写独立的 `test-run.html`，不动清单。
 
 ## CLI 使用
 
@@ -107,11 +136,17 @@ npx sb-test
 # 指定浏览器
 npx sb-test --browsers webkit,chrome
 
-# 仅生成 test-all.html
+# 并发运行 4 个测试文件
+npx sb-test -c 4
+
+# 仅同步 test-index.html
 npx sb-test --generate-only
 
-# 仅运行测试（跳过生成）
+# 仅运行测试（跳过清单同步）
 npx sb-test --run-only
+
+# 丢弃清单重新扫描生成
+npx sb-test --force-regenerate
 
 # 测试指定文件（支持多个，后缀不限 .sb.html）
 npx sb-test -f test/foo.sb.html
@@ -127,11 +162,17 @@ npx sb-test --install
 |------|------|--------|
 | `-b, --browsers <browsers>` | 浏览器列表，逗号分隔 | `webkit,chrome,firefox` |
 | `-p, --port <port>` | 本地测试服务器端口 | `30028` |
+| `-c, --concurrency <n>` | 测试文件并发数（同时运行的 iframe 数量） | `1` |
 | `-f, --file <paths...>` | 测试指定的 HTML 文件（可多个：空格或逗号分隔，或重复 `-f`；后缀不限于 `.sb.html`） | 全部文件 |
-| `--generate-only` | 仅生成测试文件 | `false` |
+| `--generate-only` | 仅同步测试清单 | `false` |
 | `--run-only` | 仅运行测试 | `false` |
+| `--force-regenerate` | 丢弃现有清单重新生成 | `false` |
 | `--install` | 安装浏览器依赖 | `false` |
-| `--keep-test-file` | 保留生成的 test-all.html | `false` |
+
+### 并发使用建议
+
+- 用例间独立（纯计算、异步、不碰共享 DOM/全局状态）→ 在 `.sb.html` 内给个别 `<sb-test>` 加 `parallel` 属性
+- 用例会操作 DOM、全局变量或依赖执行顺序 → 文件级并发：编辑 `test-index.html`，用 `parallel="n"` + `exclusive` 编排，靠 iframe 隔离保证安全
 
 ## Node.js API
 
@@ -139,14 +180,15 @@ npx sb-test --install
 import { generateTestHtml } from 'sibyl-test/scripts/generate-test-html.js';
 import { runTests } from 'sibyl-test/scripts/run-tests.js';
 
-// 生成 test-all.html
-const { fileCount, outputPath } = generateTestHtml('/path/to/project');
+// 同步测试清单 test-index.html（首次生成，之后查漏补缺）
+const { fileCount, outputPath, added, removed } = generateTestHtml('/path/to/project');
 
 // 运行测试
 const result = await runTests({
   browsers: ['webkit', 'chrome'],
   port: 30028,
-  rootDir: '/path/to/project'
+  rootDir: '/path/to/project',
+  testHtml: 'test-index.html' // 默认 test-index.html
 });
 ```
 
@@ -298,7 +340,8 @@ try {
 
 ### 如何跳过某个测试？
 
-将整个 `<sb-test>` 标签注释掉即可。
+- 跳过单个用例：将整个 `<sb-test>` 标签注释掉
+- 跳过整个文件：在 `test-index.html` 的对应 `<include>` 上加 `skip` 属性（同步时不会被移除）
 
 ### 如何测试异步操作？
 

@@ -19,6 +19,8 @@ export default class SbTestSuite extends HTMLElement {
     this.runningUrls = new Set();
     // 并发度：同时最多运行的 iframe 数量，由 parallel 属性控制（默认 1，保持原串行行为）
     this.parallel = 1;
+    // exclusive 文件独占运行时为 true：它跑的时候其他文件不能启动，它也要等别人跑完
+    this.runningExclusive = false;
     // 兼容字段：指向最近启动的 url，外部进度报告仍可读取
     this.currentUrl = null;
     this.templateReady = false;
@@ -58,30 +60,47 @@ export default class SbTestSuite extends HTMLElement {
     const parsed = parseInt(parallelAttr, 10);
     this.parallel = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 
+    // include 属性：skip 跳过不执行；exclusive 独占运行（不与其他文件并发）
     const includes = this.querySelectorAll("include");
     this.pendingUrls = Array.from(includes)
-      .map((inc) => inc.getAttribute("src"))
-      .filter(Boolean)
-      .map((url) => new URL(url, window.location.href).toString());
+      .map((inc) => ({
+        url: inc.getAttribute("src"),
+        exclusive: inc.hasAttribute("exclusive"),
+        skip: inc.hasAttribute("skip"),
+      }))
+      .filter((entry) => !!entry.url && !entry.skip)
+      .map((entry) => ({
+        ...entry,
+        url: new URL(entry.url, window.location.href).toString(),
+      }));
 
     this.templateHtml = await templatePromise;
     this.templateReady = true;
 
     this.render();
     
-    await this.preFetchTestCounts(this.pendingUrls.slice());
+    await this.preFetchTestCounts(this.pendingUrls.map((entry) => entry.url));
     
     this.render();
     this.startNext();
   }
 
-  // 按并发度启动 iframe：只要还有待跑 url 且运行中的数量小于并发度，就继续启动
+  // 按并发度启动 iframe：只要还有待跑 url 且运行中的数量小于并发度，就继续启动。
+  // exclusive 文件必须独占：轮到它时若有其他 iframe 在跑则等待；它运行时其他文件也不能启动
   startNext() {
     while (
       this.pendingUrls.length > 0 &&
       this.runningUrls.size < this.parallel
     ) {
-      const absoluteUrl = this.pendingUrls.shift();
+      const next = this.pendingUrls[0];
+      if (next.exclusive && this.runningUrls.size > 0) break;
+      if (!next.exclusive && this.runningExclusive) break;
+
+      this.pendingUrls.shift();
+      if (next.exclusive) {
+        this.runningExclusive = true;
+      }
+      const absoluteUrl = next.url;
       this.runningUrls.add(absoluteUrl);
       this.currentUrl = absoluteUrl;
 
@@ -97,6 +116,7 @@ export default class SbTestSuite extends HTMLElement {
       const preFetchedTotal = this.preFetchCounts.get(absoluteUrl) || 0;
       this.iframes.set(absoluteUrl, {
         iframe,
+        exclusive: next.exclusive,
         total: preFetchedTotal,
         success: 0,
         error: 0,
@@ -116,6 +136,9 @@ export default class SbTestSuite extends HTMLElement {
     if (iframeData.results.length === iframeData.total) {
       this.removeIframe(url);
       this.runningUrls.delete(url);
+      if (iframeData.exclusive) {
+        this.runningExclusive = false;
+      }
       this.startNext();
     }
   }

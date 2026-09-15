@@ -141,3 +141,6 @@ vite.config.ts.timestamp-*
 /_prompt.md
 
 \.*-test-data/**
+# sibyl-test 本地测试清单（自动同步，可按需提交共享编排）
+test-index.html
+test-run.html

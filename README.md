@@ -194,7 +194,7 @@ You can comment out the entire test tag to skip a test.
 
 If you need to run tests across multiple browsers (WebKit, Chrome, Firefox), we provide CLI tools to automate this process.
 
-This command-line tool automatically scans all `.sb.html` files in your project, generates a `test-all.html` file containing all test cases, and runs tests across multiple browser engines.
+This command-line tool collects all `.sb.html` files in your project into a test manifest (`test-index.html`) and runs the tests across multiple browser engines. The manifest is kept in your project: it is generated on first run, then auto-synced afterwards — so you can manually control test order, per-file concurrency, and skipped files (see [Test Manifest](#test-manifest)).
 
 ### Installation
 
@@ -211,10 +211,10 @@ npx sb-test
 # Specify browsers
 npx sb-test --browsers webkit,chrome
 
-# Generate test files only
+# Sync the test manifest only
 npx sb-test --generate-only
 
-# Run tests only (no generation)
+# Run tests only (skip manifest sync)
 npx sb-test --run-only
 
 # Install browser dependencies
@@ -245,11 +245,12 @@ npm test
 |--------|-------------|---------|
 | `-b, --browsers <browsers>` | Browsers to test (comma-separated) | `webkit,chrome,firefox` |
 | `-p, --port <port>` | Test server port | `30028` |
+| `-c, --concurrency <n>` | Number of test files to run in parallel (iframes in `test-index.html`) | `1` |
 | `-f, --file <paths...>` | Test specific HTML file(s), multiple allowed (space- or comma-separated, or repeat `-f`; suffix not limited to `.sb.html`) | All files |
-| `--generate-only` | Generate test files only | `false` |
-| `--run-only` | Run tests only | `false` |
+| `--generate-only` | Sync the test manifest only, without running tests | `false` |
+| `--run-only` | Run tests only, skip manifest sync | `false` |
+| `--force-regenerate` | Discard the existing manifest and regenerate it from scan | `false` |
 | `--install` | Install browser dependencies | `false` |
-| `--keep-test-file` | Keep generated test files | `false` |
 
 ### Examples
 
@@ -277,9 +278,40 @@ sb-test -f test/foo-sb.html -f test/bar-sb.html
 # Test specific files, using only Firefox
 sb-test -f test/foo-sb.html -b firefox
 
-# Generate test files only
+# Sync the test manifest only
 sb-test --generate-only
 ```
+
+## Test Manifest
+
+Every regular run keeps a `test-index.html` manifest in your project root. You never have to touch it, but you can edit it freely:
+
+```html
+<sb-test-suite parallel="4">
+  <!-- include order = execution order -->
+  <include src="./setup.sb.html" exclusive></include>
+  <include src="./core/a.sb.html"></include>
+  <include src="./core/b.sb.html"></include>
+  <include src="./flaky.sb.html" skip></include>
+</sb-test-suite>
+```
+
+On every run the manifest is synced against a fresh project scan:
+
+- New `.sb.html` files are **appended to the end** of the include list (your manual order is never reshuffled).
+- Entries whose file no longer exists are **removed**.
+- Everything you edited by hand — order, attributes, comments — is **preserved**.
+
+Per-include attributes:
+
+| Attribute | Effect |
+|-----------|--------|
+| `skip` | File is kept in the manifest but not executed (e.g. temporarily disabled) |
+| `exclusive` | File runs alone: it waits until no other file is running, and no other file starts until it finishes — ideal for setup files or tests that need a clean browser state |
+
+Suite attribute `parallel="n"` on `<sb-test-suite>` sets how many files run concurrently. The CLI flag `-c <n>` overwrites it only when explicitly passed; otherwise your manual value is kept.
+
+> Use `-f` to run an ad-hoc subset of files: it writes a temporary `test-run.html` instead, so your curated manifest is never touched. The temp file is removed when the run finishes.
 
 ## GitHub Actions Integration
 
@@ -338,19 +370,20 @@ jobs:
 
 ### generateTestHtml(rootDir)
 
-Generates the test HTML file.
+Syncs the test manifest (`test-index.html`): generates it on first run, then reconciles it with a fresh project scan (new files appended, deleted files removed, manual edits preserved). Pass `{ force: true }` to rebuild from scratch, or `{ parallel: 2, parallelExplicit: true }` to write the suite-level concurrency.
 
 ```javascript
 import { generateTestHtml } from 'sibyl-test/scripts/generate-test-html.js';
 
 const result = generateTestHtml('/path/to/project');
 console.log(`Found ${result.fileCount} test files`);
-console.log(`Generated: ${result.outputPath}`);
+console.log(`Manifest: ${result.outputPath}`);
+console.log(`Added: ${result.added}, Removed: ${result.removed}`);
 ```
 
 ### generateFilesHtml(rootDir, filePaths, options)
 
-Generates `test-all.html` for explicitly specified HTML file(s) — multiple files supported, and the suffix is not limited to `.sb.html` (only `.html` is required).
+Generates a temporary `test-run.html` for explicitly specified HTML file(s) — multiple files supported, and the suffix is not limited to `.sb.html` (only `.html` is required). The curated `test-index.html` is not touched.
 
 ```javascript
 import { generateFilesHtml } from 'sibyl-test/scripts/generate-test-html.js';
@@ -370,7 +403,8 @@ import { runTests } from 'sibyl-test/scripts/run-tests.js';
 const result = await runTests({
   browsers: ['webkit', 'chrome'],
   port: 30028,
-  rootDir: '/path/to/project'
+  rootDir: '/path/to/project',
+  testHtml: 'test-index.html' // manifest to open; defaults to test-index.html
 });
 
 if (result.success) {
@@ -382,7 +416,7 @@ if (result.success) {
 
 ## How It Works
 
-1. **Generation Phase**: The CLI tool scans all `.sb.html` files in the project and generates a `test-all.html` file containing all tests.
+1. **Sync Phase**: The CLI scans all `.sb.html` files in the project and syncs `test-index.html` (generate on first run; reconcile afterwards). `-f` runs generate a temporary `test-run.html` instead.
 
 2. **Test Phase**:
    - Starts a local HTTP server
@@ -390,7 +424,7 @@ if (result.success) {
    - Waits for all tests to complete
    - Collects and displays test results
 
-3. **Cleanup Phase**: Deletes the generated `test-all.html` file (unless using `--no-cleanup`)
+3. **Cleanup Phase**: The temporary `test-run.html` (from `-f` runs) is deleted. `test-index.html` is kept — your manual orchestration survives across runs.
 
 ## Example Projects
 
