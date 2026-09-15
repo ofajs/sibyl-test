@@ -5,6 +5,7 @@ import { createServer } from "http-server";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { MANIFEST_NAME } from "./generate-test-html.js";
 
 const colors = {
   reset: "\x1b[0m",
@@ -545,6 +546,7 @@ export async function runTests(options = {}) {
     browsers = ["chrome", "webkit", "firefox"],
     port = 30028,
     rootDir = process.cwd(),
+    testHtml = MANIFEST_NAME,
   } = options;
 
   const allBrowsers = [
@@ -560,15 +562,15 @@ export async function runTests(options = {}) {
     return { success: false, results: [] };
   }
 
-  const testFile = path.join(rootDir, "test-all.html");
+  const testFile = path.join(rootDir, testHtml);
   if (!fs.existsSync(testFile)) {
     console.error(
-      `${colors.red}test-all.html not found. Run generate first.${colors.reset}`,
+      `${colors.red}${testHtml} not found. Run without --run-only to generate it first.${colors.reset}`,
     );
     return { success: false, results: [] };
   }
 
-  const testUrl = `http://localhost:${port}/test-all.html`;
+  const testUrl = `http://localhost:${port}/${testHtml}`;
 
   const server = createServer({
     root: rootDir,
