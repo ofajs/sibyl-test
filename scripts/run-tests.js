@@ -409,7 +409,7 @@ async function clearBrowserStorage(page) {
   });
 }
 
-async function runPlaywrightTests(browserConfig, testUrl, rootDir) {
+async function runPlaywrightTests(browserConfig, testUrl, rootDir, timeout) {
   const { name, launcher } = browserConfig;
   const dataDir = path.join(rootDir, `.${name}-test-data`);
 
@@ -480,7 +480,7 @@ async function runPlaywrightTests(browserConfig, testUrl, rootDir) {
   }
 }
 
-async function runSeleniumFirefoxTests(testUrl, rootDir) {
+async function runSeleniumFirefoxTests(testUrl, rootDir, timeout) {
   const name = "firefox";
 
   console.log("");
@@ -540,11 +540,11 @@ async function runSeleniumFirefoxTests(testUrl, rootDir) {
   }
 }
 
-async function runBrowserTests(browserConfig, testUrl, rootDir) {
+async function runBrowserTests(browserConfig, testUrl, rootDir, timeout) {
   if (browserConfig.useSelenium) {
-    return await runSeleniumFirefoxTests(testUrl, rootDir);
+    return await runSeleniumFirefoxTests(testUrl, rootDir, timeout);
   }
-  return await runPlaywrightTests(browserConfig, testUrl, rootDir);
+  return await runPlaywrightTests(browserConfig, testUrl, rootDir, timeout);
 }
 
 export async function runTests(options = {}) {
@@ -603,7 +603,7 @@ export async function runTests(options = {}) {
 
   try {
     for (const browserConfig of selectedBrowsers) {
-      const result = await runBrowserTests(browserConfig, testUrl, rootDir);
+      const result = await runBrowserTests(browserConfig, testUrl, rootDir, timeout);
       results.push(result);
     }
 
