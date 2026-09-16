@@ -245,6 +245,7 @@ npm test
 |--------|-------------|---------|
 | `-b, --browsers <browsers>` | Browsers to test (comma-separated) | `webkit,chrome,firefox` |
 | `-p, --port <port>` | Test server port | `30028` |
+| `-t, --timeout <minutes>` | Per-browser test timeout in minutes | `5` |
 | `-c, --concurrency <n>` | Number of test files to run in parallel (iframes in `test-index.html`) | `1` |
 | `-f, --file <paths...>` | Test specific HTML file(s), multiple allowed (space- or comma-separated, or repeat `-f`; suffix not limited to `.sb.html`) | All files |
 | `--generate-only` | Sync the test manifest only, without running tests | `false` |

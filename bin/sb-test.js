@@ -182,6 +182,7 @@ async function main() {
       .version(pkg.version)
       .option("-b, --browsers <browsers>", "指定测试浏览器，多个用逗号分隔 (webkit,chrome,firefox)", "webkit,chrome,firefox")
       .option("-p, --port <port>", "测试服务器端口", "30028")
+      .option("-t, --timeout <minutes>", "单个浏览器的测试超时（分钟）", "5")
       .option("-c, --concurrency <n>", "测试文件并发数：同时运行的 iframe 数量（>1 时并行）", undefined)
       .option("--generate-only", "仅同步 test-index.html，不运行测试", false)
       .option("--run-only", "仅运行测试，跳过清单同步", false)
@@ -197,6 +198,7 @@ async function main() {
       .version(pkg.version)
       .option("-b, --browsers <browsers>", "テストするブラウザをカンマ区切りで指定 (webkit,chrome,firefox)", "webkit,chrome,firefox")
       .option("-p, --port <port>", "テストサーバーのポート", "30028")
+      .option("-t, --timeout <minutes>", "ブラウザごとのテストタイムアウト（分）", "5")
       .option("-c, --concurrency <n>", "テストファイルの並列数：同時に実行する iframe 数（>1 で並列）", undefined)
       .option("--generate-only", "test-index.html のみ同期（テストは実行しない）", false)
       .option("--run-only", "同期をスキップしてテストのみ実行", false)
@@ -212,6 +214,7 @@ async function main() {
       .version(pkg.version)
       .option("-b, --browsers <browsers>", "Comma-separated list of browsers to test (webkit,chrome,firefox)", "webkit,chrome,firefox")
       .option("-p, --port <port>", "Port for the test server", "30028")
+      .option("-t, --timeout <minutes>", "Per-browser test timeout in minutes", "5")
       .option("-c, --concurrency <n>", "Number of test files to run in parallel (iframes, >1 for concurrent)", undefined)
       .option("--generate-only", "Only sync test-index.html without running tests", false)
       .option("--run-only", "Only run tests, skip manifest sync", false)
@@ -225,6 +228,8 @@ async function main() {
   const options = program.opts();
   const browsers = options.browsers.split(",").map(b => b.trim());
   const port = parseInt(options.port);
+  // 单浏览器测试超时（毫秒），由 -t/--timeout 分钟数换算
+  const timeout = parseInt(options.timeout) * 60 * 1000;
   // -c 未传时保持 undefined，同步清单时不去覆盖手动配置的 parallel 属性
   const concurrencyExplicit = options.concurrency !== undefined;
   const concurrency = Math.max(1, parseInt(options.concurrency ?? "1") || 1);
@@ -272,7 +277,7 @@ async function main() {
     console.log("\n🚀 Running tests...\n");
     let testResult;
     try {
-      testResult = await runTests({ browsers, port, rootDir, testHtml: manifestForRun });
+      testResult = await runTests({ browsers, port, timeout, rootDir, testHtml: manifestForRun });
     } catch (error) {
       console.error("Test execution error:", error.message);
       testResult = { success: false };

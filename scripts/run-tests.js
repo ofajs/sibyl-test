@@ -31,9 +31,13 @@ function deleteDir(dirPath) {
   }
 }
 
-async function waitForTestResults(page, evaluateFn, onTick = null) {
+async function waitForTestResults(
+  page,
+  evaluateFn,
+  onTick = null,
+  maxWaitTime = 5 * 60 * 1000,
+) {
   let result = null;
-  const maxWaitTime = 5 * 60 * 1000;
   const startTime = Date.now();
 
   while (Date.now() - startTime < maxWaitTime) {
@@ -448,6 +452,7 @@ async function runPlaywrightTests(browserConfig, testUrl, rootDir) {
       page,
       (p, fn) => p.evaluate(fn),
       createProgressReporter(terminal),
+      timeout,
     );
 
     terminal.clear();
@@ -506,6 +511,7 @@ async function runSeleniumFirefoxTests(testUrl, rootDir) {
       driver,
       (d, fn) => d.executeScript(`return (${fn.toString()})();`),
       createProgressReporter(terminal),
+      timeout,
     );
 
     terminal.clear();
@@ -547,6 +553,7 @@ export async function runTests(options = {}) {
     port = 30028,
     rootDir = process.cwd(),
     testHtml = MANIFEST_NAME,
+    timeout = 5 * 60 * 1000,
   } = options;
 
   const allBrowsers = [
