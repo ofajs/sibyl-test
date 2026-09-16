@@ -241,6 +241,7 @@ npm test
 |------|------|--------|
 | `-b, --browsers <browsers>` | 指定测试浏览器（逗号分隔） | `webkit,chrome,firefox` |
 | `-p, --port <port>` | 测试服务器端口 | `30028` |
+| `-t, --timeout <minutes>` | 单个浏览器的测试超时（分钟） | `5` |
 | `-c, --concurrency <n>` | 测试文件并发数（同时运行的 iframe 数量） | `1` |
 | `-f, --file <paths...>` | 测试指定的 HTML 文件（可多个：空格或逗号分隔，或重复 `-f`；后缀不限于 `.sb.html`） | 所有文件 |
 | `--generate-only` | 只同步测试清单，不运行测试 | `false` |
