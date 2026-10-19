@@ -21,6 +21,9 @@ function collectFiles(value, previous) {
   return previous.concat(value.split(",").map(v => v.trim()).filter(Boolean));
 }
 
+// 收集 --ignore 模式：与 -f 相同的分隔规则
+const collectPatterns = collectFiles;
+
 async function installDependencies() {
   console.log("Installing Playwright browsers...");
   
@@ -79,6 +82,7 @@ Examples:
   $ sb-test -f test/foo.sb.html    Test specific file(s)
   $ sb-test -f test/a-sb.html test/b-sb.html   Test multiple files
   $ sb-test -f test/foo.sb.html -b firefox   Test specific file with Firefox only
+  $ sb-test --ignore client dist    Exclude client/ and dist/ from the scan
   $ sb-test --install              Install browser dependencies
   $ sb-test --generate-only        Only sync test-index.html
   $ sb-test --run-only             Only run tests (skip manifest sync)
@@ -104,6 +108,7 @@ const helpZh = `
   $ sb-test -f test/foo.sb.html    测试指定文件
   $ sb-test -f test/a-sb.html test/b-sb.html    测试多个文件
   $ sb-test -f test/foo.sb.html -b firefox  测试指定文件，仅使用 Firefox
+  $ sb-test --ignore client dist    扫描时排除 client/ 与 dist/
   $ sb-test --install              安装浏览器依赖
   $ sb-test --generate-only        仅同步 test-index.html，不运行测试
   $ sb-test --run-only             仅运行测试，跳过清单同步
@@ -129,6 +134,7 @@ const helpJa = `
   $ sb-test -f test/foo.sb.html    指定ファイルをテスト
   $ sb-test -f test/a-sb.html test/b-sb.html   複数ファイルをテスト
   $ sb-test -f test/foo.sb.html -b firefox  指定ファイルを Firefox のみでテスト
+  $ sb-test --ignore client dist    client/ と dist/ をスキャンから除外
   $ sb-test --install              ブラウザ依存関係をインストール
   $ sb-test --generate-only         test-index.html のみ同期（テストは実行しない）
   $ sb-test --run-only             同期をスキップしてテストのみ実行
@@ -189,6 +195,7 @@ async function main() {
       .option("--force-regenerate", "丢弃现有 test-index.html，重新扫描生成", false)
       .option("--install", "运行测试前安装浏览器依赖", false)
       .option("-f, --file <paths...>", "测试指定的 HTML 文件（可多个：空格或逗号分隔，或重复 -f；后缀不限于 .sb.html）", collectFiles, [])
+      .option("-i, --ignore <patterns...>", "扫描时排除的目录/文件（相对项目根目录的路径，目录模式排除整个子树；空格或逗号分隔，或重复 -i）", collectPatterns, [])
       .addHelpText("after", helpZh)
       .parse(cleanedArgs);
   } else if (lang === 'jp') {
@@ -205,6 +212,7 @@ async function main() {
       .option("--force-regenerate", "既存の test-index.html を破棄して再生成", false)
       .option("--install", "テスト実行前にブラウザ依存関係をインストール", false)
       .option("-f, --file <paths...>", "テストする HTML ファイルを指定（複数可：スペース・カンマ区切り、-f の繰り返し；拡張子は .sb.html に限定されない）", collectFiles, [])
+      .option("-i, --ignore <patterns...>", "スキャンから除外するディレクトリ/ファイル（プロジェクトルートからの相対パス、ディレクトリ指定でサブツリー全体を除外。スペース・カンマ区切り、-i の繰り返し可）", collectPatterns, [])
       .addHelpText("after", helpJa)
       .parse(cleanedArgs);
   } else {
@@ -221,6 +229,7 @@ async function main() {
       .option("--force-regenerate", "Discard existing test-index.html and regenerate from scan", false)
       .option("--install", "Install browser dependencies before running tests", false)
       .option("-f, --file <paths...>", "Test specific HTML file(s), multiple allowed (space- or comma-separated, or repeated -f; suffix not limited to .sb.html)", collectFiles, [])
+      .option("-i, --ignore <patterns...>", "Paths (relative to the project root) excluded from the scan; a directory pattern excludes its whole subtree (space- or comma-separated, or repeated -i)", collectPatterns, [])
       .addHelpText("after", helpEn)
       .parse(cleanedArgs);
   }
@@ -264,6 +273,7 @@ async function main() {
         parallel: concurrency,
         parallelExplicit: concurrencyExplicit,
         force: options.forceRegenerate,
+        ignore: options.ignore || [],
       });
 
       if (result.fileCount === 0) {

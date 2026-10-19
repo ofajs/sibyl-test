@@ -14,6 +14,10 @@ inputs:
     description: 'Working directory for running tests'
     required: false
     default: '.'
+  ignore:
+    description: 'Paths (relative to working-directory) excluded from the test scan, comma-separated (e.g. client,dist)'
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -75,8 +79,12 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
+        IGNORE_ARG=""
+        if [ -n "${{ inputs.ignore }}" ]; then
+          IGNORE_ARG="--ignore ${{ inputs.ignore }}"
+        fi
         if [ "${{ runner.os }}" = "Linux" ]; then
-          xvfb-run npx sb-test --browsers ${{ inputs.browsers }}
+          xvfb-run npx sb-test --browsers ${{ inputs.browsers }} $IGNORE_ARG
         else
-          npx sb-test --browsers ${{ inputs.browsers }}
+          npx sb-test --browsers ${{ inputs.browsers }} $IGNORE_ARG
         fi
