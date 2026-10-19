@@ -103,7 +103,7 @@ Sibyl Test 是一个轻量、零依赖的浏览器测试框架，基于 Web Comp
 清单首次运行自动生成，之后每次运行自动“查漏补缺”式同步：
 
 - 新增的 `.sb.html` 追加到 include 列表末尾（不打乱手动顺序）
-- 已删除文件的条目自动移除
+- 已删除文件、或落在 `--ignore` 路径下的条目自动移除
 - 手动编辑（顺序、skip、exclusive、parallel、注释）全部保留
 
 可以手动编辑清单控制执行编排：
@@ -152,6 +152,10 @@ npx sb-test --force-regenerate
 npx sb-test -f test/foo.sb.html
 npx sb-test -f test/a-sb.html test/b-sb.html
 
+# 扫描时排除目录（如含测试副本的构建产物，目录模式排除整个子树）
+npx sb-test --ignore client dist
+npx sb-test --ignore client,dist
+
 # 安装浏览器依赖
 npx sb-test --install
 ```
@@ -165,6 +169,7 @@ npx sb-test --install
 | `-t, --timeout <minutes>` | 单个浏览器的测试超时（分钟） | `5` |
 | `-c, --concurrency <n>` | 测试文件并发数（同时运行的 iframe 数量） | `1` |
 | `-f, --file <paths...>` | 测试指定的 HTML 文件（可多个：空格或逗号分隔，或重复 `-f`；后缀不限于 `.sb.html`） | 全部文件 |
+| `-i, --ignore <patterns...>` | 扫描时排除的目录/文件（相对项目根目录的路径，目录模式排除整个子树；空格或逗号分隔，或重复 `-i`） | - |
 | `--generate-only` | 仅同步测试清单 | `false` |
 | `--run-only` | 仅运行测试 | `false` |
 | `--force-regenerate` | 丢弃现有清单重新生成 | `false` |
@@ -183,6 +188,7 @@ import { runTests } from 'sibyl-test/scripts/run-tests.js';
 
 // 同步测试清单 test-index.html（首次生成，之后查漏补缺）
 const { fileCount, outputPath, added, removed } = generateTestHtml('/path/to/project');
+// 可传 { ignore: ['client'] } 在扫描时排除路径，并移除清单中匹配的条目
 
 // 运行测试
 const result = await runTests({

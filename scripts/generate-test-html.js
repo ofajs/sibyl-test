@@ -18,7 +18,20 @@ function toPosix(p) {
   return p.split(path.sep).join("/");
 }
 
-function findSbHtmlFiles(dir, baseDir) {
+// 把 --ignore 模式归一化成相对 rootDir 的 posix 路径；
+// 目录模式按路径前缀匹配（`client` 排除整个 client/ 子树），root 外或空模式直接丢弃
+function makeIgnoreMatcher(patterns, rootDir) {
+  const normalized = (patterns || [])
+    .map((p) => toPosix(path.relative(rootDir, path.resolve(rootDir, p))))
+    .filter((rel) => rel && !rel.startsWith(".."));
+
+  if (normalized.length === 0) return null;
+
+  return (relPath) =>
+    normalized.some((pat) => relPath === pat || relPath.startsWith(pat + "/"));
+}
+
+function findSbHtmlFiles(dir, baseDir, isIgnored) {
   const results = [];
   const files = fs.readdirSync(dir);
 
@@ -27,11 +40,14 @@ function findSbHtmlFiles(dir, baseDir) {
     const stat = fs.statSync(fullPath);
 
     if (stat.isDirectory()) {
-      if (file !== "node_modules" && file !== ".git") {
-        results.push(...findSbHtmlFiles(fullPath, baseDir));
+      if (file === "node_modules" || file === ".git") continue;
+      if (isIgnored && isIgnored(toPosix(path.relative(baseDir, fullPath)))) {
+        continue;
       }
+      results.push(...findSbHtmlFiles(fullPath, baseDir, isIgnored));
     } else if (file.endsWith(".sb.html")) {
-      const relativePath = path.relative(baseDir, fullPath);
+      const relativePath = toPosix(path.relative(baseDir, fullPath));
+      if (isIgnored && isIgnored(relativePath)) continue;
       results.push(relativePath);
     }
   }
@@ -45,10 +61,10 @@ function extractIncludeSrc(tag) {
 }
 
 // 查漏补缺式同步：
-// 1. 清单里指向已删除文件的 <include> 行被移除
+// 1. 清单里指向已删除文件（或落在 --ignore 路径下）的 <include> 行被移除
 // 2. 磁盘上新出现的 .sb.html 追加到 include 列表末尾（不打乱手动排序）
 // 3. 其余内容（顺序、skip/exclusive/注释等）逐字节保留
-function reconcileManifest(content, rootDir, scannedRelPaths) {
+function reconcileManifest(content, rootDir, scannedRelPaths, isIgnored) {
   const lines = content.split("\n");
   const outLines = [];
   const keptAbs = new Set();
@@ -69,8 +85,14 @@ function reconcileManifest(content, rootDir, scannedRelPaths) {
       const src = extractIncludeSrc(tag[0]);
       const abs = src ? path.resolve(rootDir, src) : null;
       if (abs && fs.existsSync(abs)) {
-        keptAbs.add(abs);
-        keptAny = true;
+        const rel = toPosix(path.relative(rootDir, abs));
+        if (isIgnored && isIgnored(rel)) {
+          newLine = newLine.replace(tag[0], "");
+          removed.push(`${src} (ignored)`);
+        } else {
+          keptAbs.add(abs);
+          keptAny = true;
+        }
       } else {
         newLine = newLine.replace(tag[0], "");
         removed.push(src || "(no src)");
@@ -164,8 +186,14 @@ function applyParallelAttr(html, parallel) {
 }
 
 export function generateTestHtml(rootDir, options = {}) {
-  const { parallel = 1, parallelExplicit = false, force = false } = options;
-  const sbHtmlFiles = findSbHtmlFiles(rootDir, rootDir);
+  const {
+    parallel = 1,
+    parallelExplicit = false,
+    force = false,
+    ignore = [],
+  } = options;
+  const isIgnored = makeIgnoreMatcher(ignore, rootDir);
+  const sbHtmlFiles = findSbHtmlFiles(rootDir, rootDir, isIgnored);
   const outputFilePath = path.join(rootDir, MANIFEST_NAME);
 
   // 已有清单 → 增量同步；旧版清单 → 迁移后同步；都没有 → 全新生成
@@ -180,7 +208,7 @@ export function generateTestHtml(rootDir, options = {}) {
   }
 
   if (baseContent !== null) {
-    const result = reconcileManifest(baseContent, rootDir, sbHtmlFiles);
+    const result = reconcileManifest(baseContent, rootDir, sbHtmlFiles, isIgnored);
     let html = result.content;
     if (parallelExplicit) {
       html = applyParallelAttr(html, parallel);
@@ -189,6 +217,9 @@ export function generateTestHtml(rootDir, options = {}) {
 
     console.log(`Synced test manifest: ${outputFilePath}`);
     console.log(`Found ${sbHtmlFiles.length} .sb.html files`);
+    if (isIgnored) {
+      console.log(`  Ignored paths: ${ignore.join(", ")}`);
+    }
     if (result.added.length > 0) {
       console.log(`  + Added: ${result.added.join(", ")}`);
     }
@@ -213,6 +244,9 @@ export function generateTestHtml(rootDir, options = {}) {
   fs.writeFileSync(outputFilePath, buildFreshHtml(sbHtmlFiles, parallel), "utf-8");
 
   console.log(`Found ${sbHtmlFiles.length} .sb.html files`);
+  if (isIgnored) {
+    console.log(`  Ignored paths: ${ignore.join(", ")}`);
+  }
   console.log(`Generated: ${outputFilePath}`);
   if (parallel > 1) {
     console.log(`Parallel: ${parallel} (iframes run concurrently)`);

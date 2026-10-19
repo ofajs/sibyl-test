@@ -248,6 +248,7 @@ npm test
 | `-t, --timeout <minutes>` | Per-browser test timeout in minutes | `5` |
 | `-c, --concurrency <n>` | Number of test files to run in parallel (iframes in `test-index.html`) | `1` |
 | `-f, --file <paths...>` | Test specific HTML file(s), multiple allowed (space- or comma-separated, or repeat `-f`; suffix not limited to `.sb.html`) | All files |
+| `-i, --ignore <patterns...>` | Paths (relative to the project root) excluded from the scan; a directory pattern excludes its whole subtree (space- or comma-separated, or repeat `-i`) | - |
 | `--generate-only` | Sync the test manifest only, without running tests | `false` |
 | `--run-only` | Run tests only, skip manifest sync | `false` |
 | `--force-regenerate` | Discard the existing manifest and regenerate it from scan | `false` |
@@ -279,6 +280,11 @@ sb-test -f test/foo-sb.html -f test/bar-sb.html
 # Test specific files, using only Firefox
 sb-test -f test/foo-sb.html -b firefox
 
+# Exclude directories from the scan (e.g. build outputs that contain test copies)
+sb-test --ignore client dist
+sb-test --ignore client,dist
+sb-test --ignore client --ignore dist
+
 # Sync the test manifest only
 sb-test --generate-only
 ```
@@ -300,7 +306,7 @@ Every regular run keeps a `test-index.html` manifest in your project root. You n
 On every run the manifest is synced against a fresh project scan:
 
 - New `.sb.html` files are **appended to the end** of the include list (your manual order is never reshuffled).
-- Entries whose file no longer exists are **removed**.
+- Entries whose file no longer exists — or that fall under an `--ignore` path — are **removed**.
 - Everything you edited by hand — order, attributes, comments — is **preserved**.
 
 Per-include attributes:
@@ -369,14 +375,14 @@ jobs:
 
 ## API
 
-### generateTestHtml(rootDir)
+### generateTestHtml(rootDir, options)
 
-Syncs the test manifest (`test-index.html`): generates it on first run, then reconciles it with a fresh project scan (new files appended, deleted files removed, manual edits preserved). Pass `{ force: true }` to rebuild from scratch, or `{ parallel: 2, parallelExplicit: true }` to write the suite-level concurrency.
+Syncs the test manifest (`test-index.html`): generates it on first run, then reconciles it with a fresh project scan (new files appended, deleted files removed, manual edits preserved). Pass `{ force: true }` to rebuild from scratch, `{ parallel: 2, parallelExplicit: true }` to write the suite-level concurrency, or `{ ignore: ['client'] }` to exclude paths from the scan (and drop matching manifest entries).
 
 ```javascript
 import { generateTestHtml } from 'sibyl-test/scripts/generate-test-html.js';
 
-const result = generateTestHtml('/path/to/project');
+const result = generateTestHtml('/path/to/project', { ignore: ['client', 'dist'] });
 console.log(`Found ${result.fileCount} test files`);
 console.log(`Manifest: ${result.outputPath}`);
 console.log(`Added: ${result.added}, Removed: ${result.removed}`);

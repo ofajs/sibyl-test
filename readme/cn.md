@@ -244,6 +244,7 @@ npm test
 | `-t, --timeout <minutes>` | 单个浏览器的测试超时（分钟） | `5` |
 | `-c, --concurrency <n>` | 测试文件并发数（同时运行的 iframe 数量） | `1` |
 | `-f, --file <paths...>` | 测试指定的 HTML 文件（可多个：空格或逗号分隔，或重复 `-f`；后缀不限于 `.sb.html`） | 所有文件 |
+| `-i, --ignore <patterns...>` | 扫描时排除的目录/文件（相对项目根目录的路径，目录模式排除整个子树；空格或逗号分隔，或重复 `-i`） | - |
 | `--generate-only` | 只同步测试清单，不运行测试 | `false` |
 | `--run-only` | 只运行测试，跳过清单同步 | `false` |
 | `--force-regenerate` | 丢弃现有清单，重新扫描生成 | `false` |
@@ -272,6 +273,11 @@ sb-test -f test/foo-sb.html -f test/bar-sb.html
 # 测试指定文件，仅使用 Firefox
 sb-test -f test/foo-sb.html -b firefox
 
+# 扫描时排除某些目录（例如含有测试副本的构建产物）
+sb-test --ignore client dist
+sb-test --ignore client,dist
+sb-test --ignore client --ignore dist
+
 # 安装浏览器依赖并运行测试
 sb-test --install
 
@@ -296,7 +302,7 @@ sb-test --generate-only
 每次运行时清单会与项目的最新扫描结果同步：
 
 - 新增的 `.sb.html` 文件会**追加到 include 列表末尾**（不会打乱你手动排的顺序）。
-- 指向已删除文件的条目会被**移除**。
+- 指向已删除文件、或落在 `--ignore` 路径下的条目会被**移除**。
 - 你手动修改的一切——顺序、属性、注释——都会**原样保留**。
 
 `<include>` 支持的属性：
@@ -365,14 +371,14 @@ jobs:
 
 ## API
 
-### generateTestHtml(rootDir)
+### generateTestHtml(rootDir, options)
 
-同步测试清单（`test-index.html`）：首次运行生成，之后与项目最新扫描结果做“查漏补缺”式同步（新文件追加、失效文件移除、手动编辑保留）。传 `{ force: true }` 可强制重建，传 `{ parallel: 2, parallelExplicit: true }` 可写入 suite 级并发数。
+同步测试清单（`test-index.html`）：首次运行生成，之后与项目最新扫描结果做“查漏补缺”式同步（新文件追加、失效文件移除、手动编辑保留）。传 `{ force: true }` 可强制重建，传 `{ parallel: 2, parallelExplicit: true }` 可写入 suite 级并发数，传 `{ ignore: ['client'] }` 可在扫描时排除路径（同时移除清单中匹配的条目）。
 
 ```javascript
 import { generateTestHtml } from 'sibyl-test/scripts/generate-test-html.js';
 
-const result = generateTestHtml('/path/to/project');
+const result = generateTestHtml('/path/to/project', { ignore: ['client', 'dist'] });
 console.log(`Found ${result.fileCount} test files`);
 console.log(`Manifest: ${result.outputPath}`);
 console.log(`Added: ${result.added}, Removed: ${result.removed}`);

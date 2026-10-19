@@ -248,6 +248,7 @@ npm test
 | `-t, --timeout <minutes>` | ブラウザごとのテストタイムアウト（分） | `5` |
 | `-c, --concurrency <n>` | テストファイルの並列数（同時に実行する iframe 数） | `1` |
 | `-f, --file <paths...>` | テストする HTML ファイルを指定（複数可：スペース・カンマ区切り、`-f` の繰り返し；拡張子は `.sb.html` に限定されない） | すべてのファイル |
+| `-i, --ignore <patterns...>` | スキャンから除外するディレクトリ/ファイル（プロジェクトルートからの相対パス、ディレクトリ指定でサブツリー全体を除外。スペース・カンマ区切り、`-i` の繰り返し可） | - |
 | `--generate-only` | マニフェストのみ同期し、テストは実行しない | `false` |
 | `--run-only` | マニフェスト同期をスキップしてテストのみ実行 | `false` |
 | `--force-regenerate` | 既存のマニフェストを破棄して再生成 | `false` |
@@ -279,6 +280,11 @@ sb-test -f test/foo-sb.html -f test/bar-sb.html
 # 指定ファイルを Firefox のみでテスト
 sb-test -f test/foo-sb.html -b firefox
 
+# スキャンからディレクトリを除外（テストコピーを含むビルド成果物など）
+sb-test --ignore client dist
+sb-test --ignore client,dist
+sb-test --ignore client --ignore dist
+
 # テストマニフェストのみ同期
 sb-test --generate-only
 ```
@@ -300,7 +306,7 @@ sb-test --generate-only
 実行のたびに、マニフェストは最新のプロジェクトスキャンと同期されます：
 
 - 新しい `.sb.html` ファイルは include リストの**末尾に追加**されます（手動の順序は崩されません）。
-- ファイルが存在しなくなったエントリは**削除**されます。
+- ファイルが存在しないエントリや `--ignore` パス配下のエントリは**削除**されます。
 - 手動で編集した内容（順序、属性、コメント）はすべて**そのまま保持**されます。
 
 `<include>` の属性：
@@ -369,14 +375,14 @@ jobs:
 
 ## API
 
-### generateTestHtml(rootDir)
+### generateTestHtml(rootDir, options)
 
-テストマニフェスト（`test-index.html`）を同期します：初回実行で生成し、以降は最新のプロジェクトスキャンと同期します（新規ファイルは末尾に追加、削除済みファイルは除去、手動編集は保持）。`{ force: true }` で強制再構築、`{ parallel: 2, parallelExplicit: true }` で suite レベルの並列数を書き込めます。
+テストマニフェスト（`test-index.html`）を同期します：初回実行で生成し、以降は最新のプロジェクトスキャンと同期します（新規ファイルは末尾に追加、削除済みファイルは除去、手動編集は保持）。`{ force: true }` で強制再構築、`{ parallel: 2, parallelExplicit: true }` で suite レベルの並列数を書き込めます。`{ ignore: ['client'] }` でスキャンからパスを除外し（マニフェストの一致エントリも削除）できます。
 
 ```javascript
 import { generateTestHtml } from 'sibyl-test/scripts/generate-test-html.js';
 
-const result = generateTestHtml('/path/to/project');
+const result = generateTestHtml('/path/to/project', { ignore: ['client', 'dist'] });
 console.log(`Found ${result.fileCount} test files`);
 console.log(`Manifest: ${result.outputPath}`);
 console.log(`Added: ${result.added}, Removed: ${result.removed}`);
